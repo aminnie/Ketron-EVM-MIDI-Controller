@@ -4,7 +4,7 @@ MIDI Button Controller for Ketron EVM
 
 USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface.
 
-See Ketron website: [Ketron](https://shop.ketron.it/)
+See Ketron website: https://shop.ketron.it/
 
 Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
 
