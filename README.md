@@ -29,7 +29,7 @@ USB based MIDI Controller supports the most often used Arranger buttons via SysE
 - Rotor Slow/Fast
   
 ### Macropad Controller Encoder support:
-Uses the Encoder switch to alternate between the followign messages on encoder rotation.
+Uses the Encoder switch to alternate between the following messages on encoder rotation.
 - Tempo Up/Down
 - Dial Up/Down
   
