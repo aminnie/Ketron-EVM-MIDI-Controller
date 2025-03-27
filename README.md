@@ -10,7 +10,7 @@ Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/
 
 Based on the Adafruit MacroPad RP2040: https://learn.adafruit.com/adafruit-macropad-rp2040
 
-# Macropad Controller button support:
+### Macropad Controller Button support:
 - Intro/End 1
 - Intro/End 2
 - Intro/End 3
@@ -24,7 +24,7 @@ Based on the Adafruit MacroPad RP2040: https://learn.adafruit.com/adafruit-macro
 - Start/End
 - Rotor Slow/Fast
   
-# Controller Encoder support:
+### Macropad Controller Encoder support:
 - Tempo Up/Down
   
 
