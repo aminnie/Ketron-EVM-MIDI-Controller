@@ -9,9 +9,9 @@ See Ketron website: https://shop.ketron.it/
 Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
 
 Based on the Adafruit MacroPad RP2040: 
-Learning & instructions: https://learn.adafruit.com/adafruit-macropad-rp2040. 
-Adadfruit kit: https://www.adafruit.com/product/5128. 
-The Starter kit can be purchased from Adafruit or vendors such as Digikey. The Starter kit is an assemble only, and requires no soldering 
+- Learning & instructions: https://learn.adafruit.com/adafruit-macropad-rp2040. 
+- Adadfruit kit: https://www.adafruit.com/product/5128. 
+- The Starter kit can be purchased from Adafruit or vendors such as Digikey. The Starter kit is an assemble only, and requires no soldering 
 or electronics experience.
 
 ### Macropad Controller Button support:
