@@ -295,6 +295,7 @@ def lookup_key_midi(key_id):
 
 # --- Prepare and send Volume or Dial Up/Down SysEx messages
 encoder_mode = False
+encoder_sign = False
 
 def process_encoder(updown):
 
@@ -304,14 +305,21 @@ def process_encoder(updown):
         process_tempo(updown)
 
 def process_tempo(updown):
+    global encoder_sign
+    
+    encoder_sign = not encoder_sign
 
     if updown == 1:
+        sign = "+" if encoder_sign else ""
+
         midi_value = key_midis["Tempo Up"]
-        labels[3].text = "SysEx: Tempo Up"
+        labels[3].text = "SysEx: Tempo Up" + sign
         print(f"Tempo Up value: {updown}")
     elif updown == -1:
+        sign = "-" if encoder_sign else ""
+
         midi_value = key_midis["Tempo Down"]
-        labels[3].text = "SysEx: Tempo Down"
+        labels[3].text = "SysEx: Tempo Down" + sign
         print(f"Tempo Down value: {updown}")
     else:
         return
@@ -321,14 +329,21 @@ def process_tempo(updown):
     return True
 
 def process_dial(updown):
+    global encoder_sign
+
+    encoder_sign = not encoder_sign
 
     if updown == 1:
+        sign = "+" if encoder_sign else ""
+
         midi_value = key_midis["Dial Up"]
-        labels[3].text = "SysEx: Dial Up"
+        labels[3].text = "SysEx: Dial Up" + sign
         print(f"Dial Up value: {updown}")
     elif updown == -1:
+        sign = "-" if encoder_sign else ""
+
         midi_value = key_midis["Dial Down"]
-        labels[3].text = "SysEx: Dial Down"
+        labels[3].text = "SysEx: Dial Down" + sign
         print(f"Dial Down value: {updown}")
     else:
         return
@@ -353,14 +368,16 @@ led_start_time = 0
 def preset_pixels():
     for pixel in range(12):
 
-        if pixel == 5 or pixel == 8:
+        if pixel == 8:
             macropad.pixels[pixel] = 0x004000 # Set to Green
         elif pixel == 3 or pixel == 6 or pixel == 9:
             macropad.pixels[pixel] = 0x004000 # Set to Green
         elif pixel == 0 or pixel == 2:
             macropad.pixels[pixel] = 0x400000 # Set to Red
         elif pixel == 11:
-            macropad.pixels[pixel] = 0x404000 # Set to Red
+            macropad.pixels[pixel] = 0x606010 # Set to Yellow
+        elif pixel == 5:
+            macropad.pixels[pixel] = 0xd02e04 # Set to Orange
         else:
             macropad.pixels[pixel] = 0x000040 # Set remaining to Blue
         lit_keys[pixel] = False
