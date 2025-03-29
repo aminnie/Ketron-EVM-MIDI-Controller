@@ -12,6 +12,25 @@ import usb_midi
 import adafruit_midi
 from adafruit_midi.system_exclusive import SystemExclusive
 
+# --- Support layout with USB Left or Right
+# If USB faces left, reverse the key layout
+key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+usb_left = True
+
+if usb_left is True:
+    for index in range(12):
+        key_map[index] = 11 - index
+
+def keys(key):
+    
+    if key < 0 or key > 11:
+        print(f"Invalid key map request: {key}")
+        key = 0
+    
+    return key_map[key]
+
+# --- Configure MacroPad
 print("Preparing MacroPad")
 
 macropad = MacroPad(rotation=0)
@@ -42,9 +61,6 @@ for index in range(12):
 main_group.append(title)
 main_group.append(layout)
 
-print(f"Encode position: {macropad.encoder}")
-encoder_position = macropad.encoder
-
 # Preparing Midi
 print("Preparing Midi")
 
@@ -57,7 +73,7 @@ midi = adafruit_midi.MIDI(
 print("Default output channel:", midi.out_channel + 1)
 print("Listening on input channel:", midi.in_channel + 1)
 
-# List of all the Midi Pedal Events supported by Ketron EVM
+# List of all the Midi Pedal Events with SysEx values supported by Ketron EVM
 key_midis = {
     "Sustain": 0x00,
     "Soft": 0x01,
@@ -240,13 +256,14 @@ key_midis = {
 
 
 # Controls the mapping of MacroPad keys to Ketron EVM functions
-macropad_key_map = ["To End", "Arr.D", "Start/Stop", "Intro/End3", "Arr.C", "Break", "Intro/End2", "Arr.B", "Fill", "Intro/End1", "Arr.A", "Rotor Slow", "Rotor Fast"]
+macropad_key_map = ["To End", "Arr.D", "Start/Stop", "Intro/End3", "Arr.C", "Break", "Intro/End2", "Arr.B", "Fill", "Intro/End1", "Arr.A", "Rotor Slow"]
+# Alternate list mapping is for toggled states such as rotor fast and slow
+macropad_key_map_alt = ["Rotor Fast"]
 
-
-# --- Helper function to send SysEx messages
+# --- Helper function to compose and send SysEx messages
 def send_sysex(midi_value):
 
-    # Note the 1 and 2 byte Sysex message formats with two bytes needed for values > 128
+    # Note the 1 and 2 byte SysEx message formats with two bytes needed for values > 128
     manufacturer_id = bytearray([100])
     sysex_data1 = bytearray([0x26, 0x79, 0x03, 0x0B, 0x7F])
     sysex_data2 = bytearray([0x26, 0x79, 0x05, 0x01, 0x0A, 0x7F])
@@ -267,26 +284,28 @@ def send_sysex(midi_value):
 
 
 # Use single key (11) to toggle Rotor between fast and slow
-rotor_flag = True
-
-def toggle_rotor(key_id):
-    global rotor_flag
-
-    if rotor_flag is True:
-        key_id = key_id + 1
-
-    rotor_flag = not rotor_flag
-    return key_id
+rotor_flag = False
 
 # --- Lookup by index and fine the corresponding MIDI value
 def lookup_key_midi(key_id):
+    global rotor_flag
 
-    # Toggle between fast and slow rotor
+    key_id = keys(key_id)
+
+    # Lookup and toggle between fast and slow rotor        
     if key_id == 11:
-        key_id = toggle_rotor(key_id)
-
-    mapped_key_id = macropad_key_map[key_id]
-    midi_value = key_midis[mapped_key_id]
+        if rotor_flag == True: 
+            mapped_key_id = macropad_key_map_alt[0]  # Rotor fast first entry in alternate map
+        else:
+            mapped_key_id = macropad_key_map[key_id]
+        rotor_flag = not rotor_flag
+        
+    # Continue to lookup all other keys
+    else:
+        mapped_key_id = macropad_key_map[key_id]
+    
+    # Get the corresponding MIDI SysEx value
+    midi_value = key_midis[mapped_key_id]        
 
     print(f"Key at index {key_id}: {mapped_key_id}, MIDI value: {midi_value}")
 
@@ -294,6 +313,7 @@ def lookup_key_midi(key_id):
 
 
 # --- Prepare and send Volume or Dial Up/Down SysEx messages
+encoder_position = macropad.encoder
 encoder_mode = False
 encoder_sign = False
 
@@ -314,13 +334,11 @@ def process_tempo(updown):
 
         midi_value = key_midis["Tempo Up"]
         labels[3].text = "SysEx: Tempo Up" + sign
-        print(f"Tempo Up value: {updown}")
     elif updown == -1:
         sign = "-" if encoder_sign else ""
 
         midi_value = key_midis["Tempo Down"]
         labels[3].text = "SysEx: Tempo Down" + sign
-        print(f"Tempo Down value: {updown}")
     else:
         return
 
@@ -338,13 +356,11 @@ def process_dial(updown):
 
         midi_value = key_midis["Dial Up"]
         labels[3].text = "SysEx: Dial Up" + sign
-        print(f"Dial Up value: {updown}")
     elif updown == -1:
         sign = "-" if encoder_sign else ""
 
         midi_value = key_midis["Dial Down"]
         labels[3].text = "SysEx: Dial Down" + sign
-        print(f"Dial Down value: {updown}")
     else:
         return
 
@@ -355,6 +371,8 @@ def process_dial(updown):
 
 # --- Prepare and send SysEx message for key pressed
 def process_key(key_id):
+
+    key_id = keys(key_id)
 
     midi_key, midi_value = lookup_key_midi(key_id)
     send_sysex(midi_value)
@@ -368,18 +386,18 @@ led_start_time = 0
 def preset_pixels():
     for pixel in range(12):
 
-        if pixel == 8:
-            macropad.pixels[pixel] = 0x004000 # Set to Green
-        elif pixel == 3 or pixel == 6 or pixel == 9:
-            macropad.pixels[pixel] = 0x004000 # Set to Green
-        elif pixel == 0 or pixel == 2:
-            macropad.pixels[pixel] = 0x400000 # Set to Red
-        elif pixel == 11:
-            macropad.pixels[pixel] = 0x606010 # Set to Yellow
-        elif pixel == 5:
-            macropad.pixels[pixel] = 0xd02e04 # Set to Orange
+        if pixel == keys(8):
+            macropad.pixels[pixel] = 0x004000  # Set to Green
+        elif pixel == keys(3) or pixel == keys(6) or pixel == keys(9):
+            macropad.pixels[pixel] = 0x004000  # Set to Green
+        elif pixel == keys(0) or pixel == keys(2):
+            macropad.pixels[pixel] = 0x400000  # Set to Red
+        elif pixel == keys(11):
+            macropad.pixels[pixel] = 0x606010  # Set to Yellow
+        elif pixel == keys(5):
+            macropad.pixels[pixel] = 0xd02e04  # Set to Orange
         else:
-            macropad.pixels[pixel] = 0x000040 # Set remaining to Blue
+            macropad.pixels[pixel] = 0x000040  # Set remaining to Blue
         lit_keys[pixel] = False
 
 # Preset all the pixels for various functions
@@ -390,18 +408,17 @@ while True:
 
     # Read MacroPad Keys and send SysEx
     key_event = macropad.keys.events.get()
+    
     if key_event:
         if key_event.pressed:
-            lit_keys[key_event.key_number] = not lit_keys[key_event.key_number]
+            lit_keys[keys(key_event.key_number)] = not lit_keys[keys(key_event.key_number)]
             led_start_time = time.time()
 
-            midi_key = process_key(key_event.key_number)
+            midi_key = process_key(keys(key_event.key_number))
             labels[3].text = "SysEx: " + midi_key
 
     # Send SysEx Tempo Up and Down SysEx messages
     if encoder_position != macropad.encoder:
-        print(f"Changed Encoder position = {macropad.encoder}")
-
         if encoder_position < macropad.encoder:
             process_encoder(+1)
         else:
@@ -416,12 +433,12 @@ while True:
     # Update MacroPad pixes based on latest status
     for pixel in range(12):
         if lit_keys[pixel]:
-            macropad.pixels[pixel] = 0x808080
+            macropad.pixels[keys(pixel)] = 0x808080
         else:
             # Turn off LEDs after time period expire
             led_cur_time = time.time()
-            if led_start_time != 0 and led_cur_time - led_start_time > 2:
+            if led_start_time != 0 and led_cur_time - led_start_time > 1:
                 preset_pixels()
 
- # --- End: Main processing loop
+# --- End: Main processing loop
 
