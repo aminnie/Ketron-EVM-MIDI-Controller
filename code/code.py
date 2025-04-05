@@ -63,7 +63,7 @@ main_group.append(title)
 main_group.append(layout)
 
 # Preparing Midi
-print("Preparing Midi")
+print("Preparing Macropad Midi")
 
 print(usb_midi.ports)
 midi = adafruit_midi.MIDI(
@@ -71,11 +71,11 @@ midi = adafruit_midi.MIDI(
 )
 
 # Convert channel numbers at the presentation layer to the ones musicians use
-print("Default output channel:", midi.out_channel + 1)
-print("Listening on input channel:", midi.in_channel + 1)
+print("Output channel:", midi.out_channel + 1)
+print("Input channel:", midi.in_channel + 1)
 
 # List of all the Midi Pedal Events with SysEx values supported by Ketron EVM
-key_midis = {
+pedal_midis = {
     "Sustain": 0x00,
     "Soft": 0x01,
     "Sostenuto": 0x02,
@@ -255,43 +255,134 @@ key_midis = {
     "Rotor Fast": 0xC4,
 }
 
+tab_midis = {
+    "DIAL_DOWN": 0x0,
+    "DIAL_UP": 0x1,
+    "PLAYER_A": 0x2,
+    "PLAYER_B": 0x3,
+    "ENTER": 0x4,
+    "MENU": 0x6,
+    "LYRIC": 0x7,
+    "LEAD": 0x8,
+    "VARIATION": 0x9,
+    "DRAWBARS_VIEW": 0x0a,
+    "DRAWBARS": 0x10,
+    "DRUMSET": 0x11,
+    "TALK": 0x12,
+    "VOICETRON": 0x13,
+    "STYLE_BOX": 0x14,
+    "VOICE1": 0x19,
+    "VOICE2": 0x1a,
+    "USER_VOICE": 0x1b,
+    "XFADE": 0x1c,
+    "INTRO1": 0x1d,
+    "INTRO2": 0x1e,
+    "INTRO3": 0x1f,
+    "BASSIST": 0x20,
+    "DRUM_MIXER": 0x22,
+    "OCTAVE_UP": 0x24,
+    "OCTAVE_DOWN": 0x25,
+    "USER_STYLE": 0x26,
+    "DSP": 0x27,
+    "ADSR_FILTER": 0x28,
+    "MICRO": 0x29,
+    "ARRA": 0x2c,
+    "ARRB": 0x2d,
+    "ARRC": 0x2e,
+    "ARRD": 0x2f,
+    "FILL": 0x30,
+    "BREAK": 0x31,
+    "JUKE_BOX": 0x32,
+    "STEM": 0x33,
+    "PIANIST": 0x34,
+    "BASS_TO_LOWEST": 0x40,
+    "MANUAL_BASS": 0x41,
+    "PORTAMENTO": 0x48,
+    "HARMONY": 0x49,
+    "PAUSE": 0x4a,
+    "TEMPO_SLOW": 0x4b,
+    "TEMPO_FAST": 0x4c,
+    "START_STOP": 0x4d,
+    "TRANSP_DOWN": 0x59,
+    "TRANSP_UP": 0x5a,
+    "AFTERTOUCH": 0x5e,
+    "EXIT": 0x5f,
+    "ROTOR_SLOW": 0x60,
+    "ROTOR_FAST": 0x61,
+    "PIANO_FAM": 0x62,
+    "ETHNIC_FAM": 0x63,
+    "ORGAN_FAM": 0x64,
+    "GUITAR_FAM": 0x65,
+    "BASS_FAM": 0x66,
+    "STRING_FAM": 0x67,
+    "BRASS_FAM": 0x68,
+    "SAX_FAM": 0x69,
+    "HOLD": 0x6f,
+    "PAD_FAM": 0x70,
+    "SYNTH_FAM": 0x71,
+    "FADEOUT": 0x73,
+    "BASS_TO_ROOT": 0x74,
+    "GM": 0x77,
+}
 
 # Controls the mapping of MacroPad keys to Ketron EVM functions
 macropad_key_map = [
-    "To End",
-    "Arr.D",
-    "Start/Stop",
-    "Intro/End3",
-    "Arr.C",
-    "Break",
-    "Intro/End2",
-    "Arr.B",
-    "Fill",
-    "Intro/End1",
-    "Arr.A",
-    "Rotor Slow",
+    "0:To End",
+    "0:Arr.D",
+    "0:Start/Stop",
+    "0:Intro/End3",
+    "0:Arr.C",
+    "0:Break",
+    "0:Intro/End2",
+    "0:Arr.B",
+    "0:Fill",
+    "0:Intro/End1",
+    "0:Arr.A",
+    "1:ROTOR_SLOW",
 ]
+
 # Alternate list mapping is for toggled states such as rotor fast and slow
-macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", "Rotor Fast"]
+macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", "1:ROTOR_FAST"]
 
 
 # --- Helper function to compose and send SysEx messages
-def send_sysex(midi_value):
+
+# Send SysEx for Pedal or Tab commands
+
+# Check on the unit if we also need to sent complementary off
+def send_pedal_sysex(midi_value):
 
     # Note the 1 and 2 byte Footswitch SysEx message formats with two bytes needed for values > 128
     manufacturer_id = bytearray([100])
-    footswitch_sysex_data1 = bytearray([0x26, 0x79, 0x03, 0x0B, 0x7F])
-    footswitch_sysex_data2 = bytearray([0x26, 0x79, 0x05, 0x01, 0x0A, 0x7F])
+
+    pedal_sysex_data1 = bytearray([0x26, 0x79, 0x03, 0x0B, 0x7F])
+    pedal_sysex_data2 = bytearray([0x26, 0x79, 0x05, 0x01, 0x0A, 0x7F])
 
     if midi_value < 128:
-        footswitch_sysex_data1[3] = midi_value
-        footswitch_sysex_data1[4] = 0x7F
-        sysex_message = SystemExclusive(manufacturer_id, footswitch_sysex_data1)
+        pedal_sysex_data1[3] = midi_value
+        pedal_sysex_data1[4] = 0x7F
+        sysex_message = SystemExclusive(manufacturer_id, pedal_sysex_data1)
     else:
-        footswitch_sysex_data2[3] = (midi_value >> 7) & 0x7F
-        footswitch_sysex_data2[4] = midi_value & 0x7F
-        footswitch_sysex_data2[5] = 0x7F
-        sysex_message = SystemExclusive(manufacturer_id, footswitch_sysex_data2)
+        pedal_sysex_data2[3] = (midi_value >> 7) & 0x7F
+        pedal_sysex_data2[4] = midi_value & 0x7F
+        pedal_sysex_data2[5] = 0x7F
+        sysex_message = SystemExclusive(manufacturer_id, pedal_sysex_data2)
+
+    midi.send(sysex_message)
+
+    return True
+
+# For Tab, set status to tab = 00h – 77h, and 00h for led off, 7Fh led on
+# Check on the unit if we also need to sent complementary off
+def send_tab_sysex(midi_value):
+
+    manufacturer_id = bytearray([100])
+
+    tab_sysex_data = bytearray([0x26, 0x7C, 0x4D, 0x0B, 0x7F])
+
+    tab_sysex_data[3] = midi_value
+    tab_sysex_data[4] = 0x7F
+    sysex_message = SystemExclusive(manufacturer_id, tab_sysex_data)
 
     midi.send(sysex_message)
 
@@ -302,7 +393,6 @@ def send_sysex(midi_value):
 encoder_position = macropad.encoder
 encoder_mode = False
 encoder_sign = False
-
 
 def process_encoder(updown):
 
@@ -320,17 +410,17 @@ def process_tempo(updown):
     if updown == 1:
         sign = "+" if encoder_sign else ""
 
-        midi_value = key_midis["Tempo Up"]
+        midi_value = pedal_midis["Tempo Up"]
         labels[3].text = "SysEx: Tempo Up" + sign
     elif updown == -1:
         sign = "-" if encoder_sign else ""
 
-        midi_value = key_midis["Tempo Down"]
+        midi_value = pedal_midis["Tempo Down"]
         labels[3].text = "SysEx: Tempo Down" + sign
     else:
         return
 
-    send_sysex(midi_value)
+    send_pedal_sysex(midi_value)
 
     return True
 
@@ -343,16 +433,16 @@ def process_dial(updown):
     if updown == 1:
         sign = "+" if encoder_sign else ""
 
-        midi_value = key_midis["Dial Up"]
+        midi_value = pedal_midis["Dial Up"]
         labels[3].text = "SysEx: Dial Up" + sign
     elif updown == -1:
         sign = "-" if encoder_sign else ""
 
-        midi_value = key_midis["Dial Down"]
+        midi_value = pedal_midis["Dial Down"]
         labels[3].text = "SysEx: Dial Down" + sign
     else:
         return
-    send_sysex(midi_value)
+    send_pedal_sysex(midi_value)
 
     return True
 
@@ -369,21 +459,38 @@ def lookup_key_midi(key_id):
     # Lookup and toggle between fast and slow rotor
     if key_id == 11:
         if rotor_flag is True:
-            mapped_key_id = macropad_key_map_alt[
-                11
-            ]  # Rotor fast first entry in alternate map
+            mapped_key_id = macropad_key_map_alt[11]  # Rotor fast first entry in alternate map
         else:
             mapped_key_id = macropad_key_map[key_id]
         rotor_flag = not rotor_flag
     # Continue to lookup all other keys
     else:
         mapped_key_id = macropad_key_map[key_id]
+
+    # Extract out whether to use Pedal or Tab lookup and the Midi command
+    if mapped_key_id[1:2] != ":" or mapped_key_id == "":
+        print(f"Invalid key lookup value {mapped_key_id}")
+        labels[6].text = "Invalid! " + mapped_key_id
+        return 0, mapped_key_id, 0
+
+    try:
+        lookup_key = int(mapped_key_id[0:1])    
+    except ValueError:
+        print(f"Lookup table str to int conversion failed: {mapped_key_id[0:1]}")
+        labels[6].text = "Invalid! " + mapped_key_id
+        return 0, mapped_key_id, 0
+
+    mapped_key_id = mapped_key_id[2:]
+
     # Get the corresponding MIDI SysEx value
-    midi_value = key_midis[mapped_key_id]
+    if lookup_key == 0:
+        midi_value = pedal_midis[mapped_key_id]
+    else:
+        midi_value = tab_midis[mapped_key_id]
 
-    # print(f"Key at index {key_id}: {mapped_key_id}, MIDI value: {midi_value}")
+    print(f"Key at index {key_id}: {mapped_key_id}, table: {lookup_key}, MIDI value: {midi_value}")
 
-    return mapped_key_id, midi_value
+    return lookup_key, mapped_key_id, midi_value
 
 
 # --- Prepare and send SysEx message for key pressed
@@ -391,8 +498,12 @@ def process_key(key_id):
 
     key_id = keys(key_id)
 
-    midi_key, midi_value = lookup_key_midi(key_id)
-    send_sysex(midi_value)
+    lookup_key, midi_key, midi_value = lookup_key_midi(key_id)
+    
+    if lookup_key == 0:
+        send_pedal_sysex(midi_value)
+    else:
+        send_tab_sysex(midi_value)
 
     return midi_key
 
@@ -419,6 +530,10 @@ def preset_pixels():
             macropad.pixels[pixel] = 0x000040  # Set remaining Arr. A to D to Blue
         lit_keys[pixel] = False
 
+    # Clear status line
+    labels[6].text = ""
+    
+    return
 
 # Initialize all pixels for various functions
 preset_pixels()
