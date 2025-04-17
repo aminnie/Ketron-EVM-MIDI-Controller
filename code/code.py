@@ -1,5 +1,7 @@
 # Ketron EVM Button Controller
 
+# https://forum.bome.com/t/sysex-for-ketron-device/933
+
 import time
 
 import displayio
@@ -10,13 +12,18 @@ from adafruit_macropad import MacroPad
 
 import usb_midi
 import adafruit_midi
+from adafruit_midi.control_change import ControlChange
+from adafruit_midi.note_off import NoteOff
+from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
+
+version = "04-16-2025"
 
 # --- Support layout with USB Left or Right
 # If USB faces left, reverse the key layout
 key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
-usb_left = False
+usb_left = True
 
 if usb_left is True:
     for index in range(12):
@@ -62,6 +69,12 @@ for index in range(12):
 main_group.append(title)
 main_group.append(layout)
 
+# Display version number for 2 sec
+labels[3].text = "Pedal/Tab Controller"
+labels[6].text = "Version: " + version
+time.sleep(2)
+
+
 # Preparing Midi
 print("Preparing Macropad Midi")
 
@@ -73,6 +86,22 @@ midi = adafruit_midi.MIDI(
 # Convert channel numbers at the presentation layer to the ones musicians use
 print("Output channel:", midi.out_channel + 1)
 print("Input channel:", midi.in_channel + 1)
+
+# Midi Startup Test
+def test_midi():
+    
+    labels[6].text = "Audible MIDI test! "
+
+    for x in range(4): 
+        midi.send(NoteOn("C4", 120))
+        time.sleep(0.25)
+
+        midi.send(NoteOff("C4", 120))
+        time.sleep(0.25)
+        
+    return True
+
+test_midi()
 
 # List of all the Midi Pedal Events with SysEx values supported by Ketron EVM
 pedal_midis = {
@@ -326,6 +355,7 @@ tab_midis = {
 }
 
 # Controls the mapping of MacroPad keys to Ketron EVM functions
+# Lookup table prefix 0 = pedal_midis, 1 = tab_midis
 macropad_key_map = [
     "0:To End",
     "0:Arr.D",
@@ -344,44 +374,74 @@ macropad_key_map = [
 # Alternate list mapping is for toggled states such as rotor fast and slow
 macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", "1:ROTOR_FAST"]
 
-
 # --- Helper function to compose and send SysEx messages
 
 # Send SysEx for Pedal or Tab commands
 
 # Check on the unit if we also need to sent complementary off
+
+TAB = 0x00
+PEDAL = 0x00
+STATUS = 0x00
+
+ON = 0x7F
+OFF = 0x00
+
 def send_pedal_sysex(midi_value):
 
+    # The manufacturer ID for the Ketron EVENT EVM arranger module is 45342
+    manufacturer_id = bytearray([0x26, 0x79])
+
     # Note the 1 and 2 byte Footswitch SysEx message formats with two bytes needed for values > 128
-    manufacturer_id = bytearray([100])
 
-    pedal_sysex_data1 = bytearray([0x26, 0x79, 0x03, 0x0B, 0x7F])
-    pedal_sysex_data2 = bytearray([0x26, 0x79, 0x05, 0x01, 0x0A, 0x7F])
+    pedal_sysex_data1 = bytearray([0x03, PEDAL, STATUS])
+    pedal_sysex_data2 = bytearray([0x05, PEDAL, PEDAL, STATUS])
 
+    # Send ON followed by OFF Message
     if midi_value < 128:
-        pedal_sysex_data1[3] = midi_value
-        pedal_sysex_data1[4] = 0x7F
+        pedal_sysex_data1[1] = midi_value
+        pedal_sysex_data1[2] = ON
         sysex_message = SystemExclusive(manufacturer_id, pedal_sysex_data1)
+
+        midi.send(sysex_message)
+
+        pedal_sysex_data1[2] = OFF
+        sysex_message = SystemExclusive(manufacturer_id, pedal_sysex_data1)
+
+        midi.send(sysex_message)
+
     else:
-        pedal_sysex_data2[3] = (midi_value >> 7) & 0x7F
-        pedal_sysex_data2[4] = midi_value & 0x7F
-        pedal_sysex_data2[5] = 0x7F
+        pedal_sysex_data2[1] = (midi_value >> 7) & 0x7F
+        pedal_sysex_data2[2] = midi_value & 0x7F
+        pedal_sysex_data2[3] = ON
         sysex_message = SystemExclusive(manufacturer_id, pedal_sysex_data2)
 
-    midi.send(sysex_message)
+        midi.send(sysex_message)
+
+        pedal_sysex_data2[3] = OFF
+        sysex_message = SystemExclusive(manufacturer_id, pedal_sysex_data2)
+
+        midi.send(sysex_message)
 
     return True
+
 
 # For Tab, set status to tab = 00h – 77h, and 00h for led off, 7Fh led on
 # Check on the unit if we also need to sent complementary off
 def send_tab_sysex(midi_value):
 
-    manufacturer_id = bytearray([100])
+    # The manufacturer ID for the Ketron EVENT EVM arranger module is 45342
+    manufacturer_id = bytearray([0x26, 0x7C])
 
-    tab_sysex_data = bytearray([0x26, 0x7C, 0x4D, 0x0B, 0x7F])
+    tab_sysex_data = bytearray([TAB, STATUS])
 
-    tab_sysex_data[3] = midi_value
-    tab_sysex_data[4] = 0x7F
+    tab_sysex_data[0] = midi_value
+    tab_sysex_data[1] = ON
+    sysex_message = SystemExclusive(manufacturer_id, tab_sysex_data)
+
+    midi.send(sysex_message)
+
+    tab_sysex_data[1] = OFF
     sysex_message = SystemExclusive(manufacturer_id, tab_sysex_data)
 
     midi.send(sysex_message)
@@ -442,6 +502,7 @@ def process_dial(updown):
         labels[3].text = "SysEx: Dial Down" + sign
     else:
         return
+        
     send_pedal_sysex(midi_value)
 
     return True
@@ -474,7 +535,7 @@ def lookup_key_midi(key_id):
         return 0, mapped_key_id, 0
 
     try:
-        lookup_key = int(mapped_key_id[0:1])    
+        lookup_key = int(mapped_key_id[0:1])
     except ValueError:
         print(f"Lookup table str to int conversion failed: {mapped_key_id[0:1]}")
         labels[6].text = "Invalid! " + mapped_key_id
@@ -499,11 +560,16 @@ def process_key(key_id):
     key_id = keys(key_id)
 
     lookup_key, midi_key, midi_value = lookup_key_midi(key_id)
-    
+
     if lookup_key == 0:
         send_pedal_sysex(midi_value)
     else:
         send_tab_sysex(midi_value)
+
+
+    # Temp MIDI connect to EVM audible test
+    if key_id == 0:
+        test_midi()
 
     return midi_key
 
@@ -532,7 +598,7 @@ def preset_pixels():
 
     # Clear status line
     labels[6].text = ""
-    
+
     return
 
 # Initialize all pixels for various functions
@@ -562,11 +628,11 @@ while True:
             process_encoder(-1)
 
         encoder_position = macropad.encoder
-        
+
     # Use the Encoder switch to alternate between Tempo and Dial Up/Down
     if macropad.encoder_switch:
         encoder_mode = not encoder_mode
-        
+
     # Update MacroPad pixes based on latest status
     for pixel in range(12):
         if lit_keys[pixel]:
