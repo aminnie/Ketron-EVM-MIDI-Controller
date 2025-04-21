@@ -26,13 +26,17 @@ USB based MIDI Controller supports the most often used Arranger buttons via SysE
 - Fill
 - Break
 - Start/End
-- Rotor Slow/Fast
+- Variation
   
 ### Macropad Controller Encoder support:
 Uses the Encoder switch to alternate between the following messages on encoder rotation.
 - Tempo Up/Down
 - Dial Up/Down
   
+#### NOTE: 
+- The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB ports. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the start up connect requirement we have to power it via a USB hub with external power. This hub is an example of what works well:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
+- Optional: If you would like the key illumoination to be less distracting, then turn the key lighting off in the code, or better, consider the Adafruit MX Black Keycaps witha window - https://www.adafruit.com/product/5112 
+
 
 
 
