@@ -17,13 +17,13 @@ from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
-version = "04-16-2025"
+version = "04-19-2025"
 
 # --- Support layout with USB Left or Right
 # If USB faces left, reverse the key layout
-key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-
 usb_left = True
+
+key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 if usb_left is True:
     for index in range(12):
@@ -74,34 +74,7 @@ labels[3].text = "Pedal/Tab Controller"
 labels[6].text = "Version: " + version
 time.sleep(2)
 
-
-# Preparing Midi
-print("Preparing Macropad Midi")
-
-print(usb_midi.ports)
-midi = adafruit_midi.MIDI(
-    midi_in=usb_midi.ports[0], in_channel=0, midi_out=usb_midi.ports[1], out_channel=0
-)
-
-# Convert channel numbers at the presentation layer to the ones musicians use
-print("Output channel:", midi.out_channel + 1)
-print("Input channel:", midi.in_channel + 1)
-
-# Midi Startup Test
-def test_midi():
-    
-    labels[6].text = "Audible MIDI test! "
-
-    for x in range(4): 
-        midi.send(NoteOn("C4", 120))
-        time.sleep(0.25)
-
-        midi.send(NoteOff("C4", 120))
-        time.sleep(0.25)
-        
-    return True
-
-test_midi()
+# Prepare MIDI Key to MIDI Lookups
 
 # List of all the Midi Pedal Events with SysEx values supported by Ketron EVM
 pedal_midis = {
@@ -368,13 +341,48 @@ macropad_key_map = [
     "0:Fill",
     "0:Intro/End1",
     "0:Arr.A",
-    "1:ROTOR_SLOW",
+    "1:VARIATION",
 ]
 
 # Alternate list mapping is for toggled states such as rotor fast and slow
-macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", "1:ROTOR_FAST"]
+macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-# --- Helper function to compose and send SysEx messages
+
+# Preparing Midi allowing for EVM to detect
+print("Preparing Macropad Midi")
+
+print(usb_midi.ports)
+midi = adafruit_midi.MIDI(
+    midi_in=usb_midi.ports[0], in_channel=0, midi_out=usb_midi.ports[1], out_channel=1
+)
+
+# Convert channel numbers at the presentation layer to the ones musicians use
+print("Output channel:", midi.out_channel + 1)
+print("Input channel:", midi.in_channel + 1)
+
+
+# Midi Connect Basic Check
+def test_midi():
+    
+    outchan = 2
+    
+    labels[6].text = "Audible MIDI test! "
+
+    for x in range(4): 
+        print(f"Sending note: {x}")
+        
+        midi.send(NoteOn("C4", 120))
+        time.sleep(0.25)
+
+        midi.send(NoteOff("C4", 0))
+        time.sleep(0.25)
+        
+    labels[6].text = ""
+
+    return True
+
+
+# --- Helper functions to compose and send SysEx or Note messages
 
 # Send SysEx for Pedal or Tab commands
 
@@ -478,10 +486,10 @@ def process_tempo(updown):
         midi_value = pedal_midis["Tempo Down"]
         labels[3].text = "SysEx: Tempo Down" + sign
     else:
-        return
+        return False
 
     send_pedal_sysex(midi_value)
-
+    
     return True
 
 
@@ -501,7 +509,7 @@ def process_dial(updown):
         midi_value = pedal_midis["Dial Down"]
         labels[3].text = "SysEx: Dial Down" + sign
     else:
-        return
+        return False
         
     send_pedal_sysex(midi_value)
 
@@ -517,16 +525,19 @@ def lookup_key_midi(key_id):
 
     key_id = keys(key_id)
 
+    '''
     # Lookup and toggle between fast and slow rotor
     if key_id == 11:
         if rotor_flag is True:
-            mapped_key_id = macropad_key_map_alt[11]  # Rotor fast first entry in alternate map
+            mapped_key_id = macropad_key_map_alt[11]  # Rotor fast in alternate map
         else:
             mapped_key_id = macropad_key_map[key_id]
         rotor_flag = not rotor_flag
     # Continue to lookup all other keys
     else:
         mapped_key_id = macropad_key_map[key_id]
+    '''
+    mapped_key_id = macropad_key_map[key_id]
 
     # Extract out whether to use Pedal or Tab lookup and the Midi command
     if mapped_key_id[1:2] != ":" or mapped_key_id == "":
@@ -566,11 +577,6 @@ def process_key(key_id):
     else:
         send_tab_sysex(midi_value)
 
-
-    # Temp MIDI connect to EVM audible test
-    if key_id == 0:
-        test_midi()
-
     return midi_key
 
 
@@ -583,17 +589,17 @@ def preset_pixels():
     for pixel in range(12):
 
         if pixel == keys(8):
-            macropad.pixels[pixel] = 0x004000  # Set Intro/End 1-3 to Green
+            macropad.pixels[pixel] = 0x002000  #  Set Fill to Green
         elif pixel == keys(3) or pixel == keys(6) or pixel == keys(9):
-            macropad.pixels[pixel] = 0x004000  # Set Break to Green
+            macropad.pixels[pixel] = 0x002000  # Set Set Intro/End 1-3 to Green
         elif pixel == keys(0) or pixel == keys(2):
-            macropad.pixels[pixel] = 0x400000  # Set Start/Stop to Red
+            macropad.pixels[pixel] = 0x200000  # Set Start/Stop to Red
         elif pixel == keys(11):
-            macropad.pixels[pixel] = 0x606010  # Set Rotor to Yellow
+            macropad.pixels[pixel] = 0x000020  # 0x303010  # Set Rotor to Yellow
         elif pixel == keys(5):
-            macropad.pixels[pixel] = 0xD02E04  # Set Break to Orange
+            macropad.pixels[pixel] = 0x701E02  # Set Break to Orange
         else:
-            macropad.pixels[pixel] = 0x000040  # Set remaining Arr. A to D to Blue
+            macropad.pixels[pixel] = 0x000020  # Set remaining Arr. A to D to Blue
         lit_keys[pixel] = False
 
     # Clear status line
@@ -632,6 +638,10 @@ while True:
     # Use the Encoder switch to alternate between Tempo and Dial Up/Down
     if macropad.encoder_switch:
         encoder_mode = not encoder_mode
+        
+        # Temp: Also test MIDI connect to EVM with audible test
+        test_midi()
+
 
     # Update MacroPad pixes based on latest status
     for pixel in range(12):
