@@ -12,7 +12,7 @@ Based on the Adafruit MacroPad RP2040:
 See Ketron website for more details about the EVM: https://shop.ketron.it/
 - Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
 
-USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface However, button assignmeents can be changed to by modifying the values in the key mappings table.
+USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface Mutton assignmeents can be changed to by modifying the values in the key mappings table.
 
 Adafruit Macropad RP2040:
 
