@@ -9,6 +9,8 @@ Based on the Adafruit MacroPad RP2040:
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
 - The Starter kit is an assemble only, and requires no soldering or electronics experience.
 
+![image](https://github.com/user-attachments/assets/19278331-ac43-4239-b7ca-eed1cd57c6f6)
+
 See Ketron website: https://shop.ketron.it/
 - Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
 
