@@ -3,7 +3,7 @@
 MIDI Button Controller for Ketron EVM Sound Module.
 
 Based on the Adafruit MacroPad RP2040: 
-- Learning & instructions: https://learn.adafruit.com/adafruit-macropad-rp2040. 
+- Learning more about the Macropad & assembly instructions: https://learn.adafruit.com/adafruit-macropad-rp2040. 
 - Adadfruit kit: https://www.adafruit.com/product/5128
 - The Starter kit can also be purchased from vendors such as Digikey: https://www.digikey.com/en/products/detail/adafruit-industries-llc/5128/14635377
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
