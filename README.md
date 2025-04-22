@@ -40,13 +40,13 @@ Uses the Encoder switch to alternate between the following messages on encoder r
 - Dial Up/Down
   
 #### NOTE: 
-- The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the start up connect requirement we have to power it via a USB hub with external power. This hub is an example of what works well:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
+- The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
 
 #### Optional:
-- If you find the key illumoination distracting, you may want to turn the key lighting off in the code, or consider the Adafruit MX Black Keycaps with a window - https://www.adafruit.com/product/5112
+- If you find the key illumoination distracting, you may want to turn the key lighting down or off in the code, or consider the Adafruit MX Black Keycaps with a clear window slot - https://www.adafruit.com/product/5112
 - You could also consider a 3D printed case for the Macropad: https://www.printables.com/model/138045-adafruit-macropad-case or https://www.thingiverse.com/thing:4922256/makes
 
-Macropad used along with EVM iPad Controller:
+My setup with the ROland AT900C, EVM and iPad Controller and the Macropad:
 
 ![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
 
