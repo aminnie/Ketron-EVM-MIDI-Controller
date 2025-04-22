@@ -9,7 +9,7 @@ Based on the Adafruit MacroPad RP2040:
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
 - The Starter kit is an assemble only, and requires no soldering or electronics experience.
 
-![image](https://github.com/user-attachments/assets/19278331-ac43-4239-b7ca-eed1cd57c6f6 =250x250)
+![image](https://github.com/user-attachments/assets/19278331-ac43-4239-b7ca-eed1cd57c6f6 width="100" height="100")
 
 See Ketron website: https://shop.ketron.it/
 - Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
@@ -40,7 +40,7 @@ Uses the Encoder switch to alternate between the following messages on encoder r
 - Optional: If you would like the key illumoination to be less distracting, then turn the key lighting off in the code, or better, consider the Adafruit MX Black Keycaps witha window - https://www.adafruit.com/product/5112 
 
 Macropad used along with EVM iPad Controller:
-![image](https://github.com/user-attachments/assets/f973780d-daf9-4208-98ba-5f209fdb5782 =250x250)
+<img = "https://github.com/user-attachments/assets/f973780d-daf9-4208-98ba-5f209fdb5782" width="100" height="100">
 
 
 
