@@ -15,7 +15,7 @@ Adafruit Macropad RP2040:
 
 The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed by modifying the values in the key mappings table.
 
-The controller is currently programmed with the following keys:
+The controller is currently programmed with the following EVM SysEx messages:
 - Intro/End 1
 - Intro/End 2
 - Intro/End 3
