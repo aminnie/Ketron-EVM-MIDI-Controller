@@ -9,7 +9,7 @@ Based on the Adafruit MacroPad RP2040:
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
 - The Starter kit is an assemble only, and requires no soldering or electronics experience.
 
-![image](https://github.com/user-attachments/assets/19278331-ac43-4239-b7ca-eed1cd57c6f6)
+![image](https://github.com/user-attachments/assets/19278331-ac43-4239-b7ca-eed1cd57c6f6 =250x250)
 
 See Ketron website: https://shop.ketron.it/
 - Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
@@ -39,8 +39,8 @@ Uses the Encoder switch to alternate between the following messages on encoder r
 - The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the start up connect requirement we have to power it via a USB hub with external power. This hub is an example of what works well:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
 - Optional: If you would like the key illumoination to be less distracting, then turn the key lighting off in the code, or better, consider the Adafruit MX Black Keycaps witha window - https://www.adafruit.com/product/5112 
 
-
-![image](https://github.com/user-attachments/assets/f973780d-daf9-4208-98ba-5f209fdb5782)
+Macropad used along with EVM iPad Controller:
+![image](https://github.com/user-attachments/assets/f973780d-daf9-4208-98ba-5f209fdb5782 =250x250)
 
 
 
