@@ -27,10 +27,10 @@ Adafruit Macropad RP2040:
 - Arr.B
 - Arr.C
 - Arr.D
+- Variation
 - Fill
 - Break
 - Start/End
-- Variation
 
 Please see the source code for additional EVM functionalities and SysEx options that can be loaded to Macropad buttons.
 
