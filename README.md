@@ -39,8 +39,11 @@ Uses the Encoder switch to alternate between the following messages on encoder r
   
 #### NOTE: 
 - The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the start up connect requirement we have to power it via a USB hub with external power. This hub is an example of what works well:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
-- Optional: If you would like the key illumoination to be less distracting, then turn the key lighting off in the code, or better, consider the Adafruit MX Black Keycaps witha window - https://www.adafruit.com/product/5112 
 
+###-Optional:
+- If you would like the key illumoination to be less distracting, then turn the key lighting off in the code, or better, consider the Adafruit MX Black Keycaps witha window - https://www.adafruit.com/product/5112
+- You could also consider a 3D printed case for the Macropad: https://www.printables.com/model/138045-adafruit-macropad-case
+- 
 Macropad used along with EVM iPad Controller:
 
 ![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
