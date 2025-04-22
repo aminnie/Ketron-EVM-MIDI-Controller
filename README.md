@@ -19,6 +19,8 @@ Adafruit Macropad RP2040:
 ![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
 ### Macropad Controller Button support:
+
+THe controller is currently programmed with the following keys:
 - Intro/End 1
 - Intro/End 2
 - Intro/End 3
