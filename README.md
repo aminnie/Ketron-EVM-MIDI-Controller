@@ -15,7 +15,7 @@ Adafruit Macropad RP2040:
 
 ### Macropad Controller Button support:
 
-The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed to by modifying the values in the key mappings table.
+The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed by modifying the values in the key mappings table.
 
 The controller is currently programmed with the following keys:
 - Intro/End 1
