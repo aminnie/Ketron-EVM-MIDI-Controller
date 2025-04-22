@@ -40,6 +40,7 @@ Uses the Encoder switch to alternate between the following messages on encoder r
 - Optional: If you would like the key illumoination to be less distracting, then turn the key lighting off in the code, or better, consider the Adafruit MX Black Keycaps witha window - https://www.adafruit.com/product/5112 
 
 
+![image](https://github.com/user-attachments/assets/f973780d-daf9-4208-98ba-5f209fdb5782)
 
 
 
