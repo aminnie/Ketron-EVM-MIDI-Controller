@@ -11,9 +11,7 @@ Based on the Adafruit MacroPad RP2040:
 
 Adafruit Macropad RP2040:
 
-![image](https://github.com/user-attachments/assets/19278331-ac43-4239-b7ca-eed1cd57c6f6)
-
-![image](https://github.com/user-attachments/assets/5d1f8c0a-c844-41bd-bf18-2b9b4612a77d)
+![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
 
 See Ketron website for more details about the EVM: https://shop.ketron.it/
