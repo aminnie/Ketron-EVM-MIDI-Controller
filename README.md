@@ -42,8 +42,8 @@ Uses the Encoder switch to alternate between the following messages on encoder r
 
 ###-Optional:
 - If you would like the key illumoination to be less distracting, then turn the key lighting off in the code, or better, consider the Adafruit MX Black Keycaps witha window - https://www.adafruit.com/product/5112
-- You could also consider a 3D printed case for the Macropad: https://www.printables.com/model/138045-adafruit-macropad-case
-- 
+- You could also consider a 3D printed case for the Macropad: https://www.printables.com/model/138045-adafruit-macropad-case or https://www.thingiverse.com/thing:4922256/makes
+
 Macropad used along with EVM iPad Controller:
 
 ![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
