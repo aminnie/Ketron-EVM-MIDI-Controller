@@ -9,13 +9,13 @@ Based on the Adafruit MacroPad RP2040:
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
 - The Starter kit is an assemble only, and requires no soldering or electronics experience.
 
-The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed to by modifying the values in the key mappings table.
-
 Adafruit Macropad RP2040:
 
 ![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
 ### Macropad Controller Button support:
+
+The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed to by modifying the values in the key mappings table.
 
 The controller is currently programmed with the following keys:
 - Intro/End 1
