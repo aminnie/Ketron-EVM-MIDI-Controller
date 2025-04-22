@@ -31,7 +31,9 @@ Adafruit Macropad RP2040:
 - Break
 - Start/End
 - Variation
-  
+
+Please see the source code for additional EVM functionalities and SysEx options that cna be loaded to Macropad buttons.
+
 ### Macropad Controller Encoder support:
 Uses the Encoder switch to alternate between the following messages on encoder rotation.
 - Tempo Up/Down
