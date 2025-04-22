@@ -17,10 +17,7 @@ Adafruit Macropad RP2040:
 
 ### Macropad Controller Button support:
 
-See Ketron website for more details about the EVM: https://shop.ketron.it/
-- Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
-
-THe controller is currently programmed with the following keys:
+The controller is currently programmed with the following keys:
 - Intro/End 1
 - Intro/End 2
 - Intro/End 3
@@ -33,6 +30,9 @@ THe controller is currently programmed with the following keys:
 - Fill
 - Break
 - Start/End
+
+See Ketron website for more details about the EVM: https://shop.ketron.it/
+- Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
 
 Please see the source code for additional EVM functionalities and SysEx options that can be loaded to Macropad buttons.
 
