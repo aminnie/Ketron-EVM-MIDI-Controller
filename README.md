@@ -37,7 +37,7 @@ Please see the source code for additional EVM functionalities and SysEx options 
 ### Macropad Controller Encoder support:
 Uses the Encoder switch to alternate between the following messages on encoder rotation.
 - Tempo Up/Down
-- Dial Up/Down
+- Rotor Fast/Slow
   
 #### NOTE: 
 - The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
