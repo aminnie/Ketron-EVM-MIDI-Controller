@@ -17,7 +17,7 @@ from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
-version = "04-19-2025"
+version = "04-23-2025"
 
 # --- Support layout with USB Left or Right
 # If USB faces left, reverse the key layout
@@ -363,20 +363,20 @@ print("Input channel:", midi.in_channel + 1)
 
 # Midi Connect Basic Check
 def test_midi():
-    
+
     outchan = 2
-    
+
     labels[6].text = "Audible MIDI test! "
 
-    for x in range(4): 
+    for x in range(4):
         print(f"Sending note: {x}")
-        
+
         midi.send(NoteOn("C4", 120))
         time.sleep(0.25)
 
         midi.send(NoteOff("C4", 0))
         time.sleep(0.25)
-        
+
     labels[6].text = ""
 
     return True
@@ -385,8 +385,6 @@ def test_midi():
 # --- Helper functions to compose and send SysEx or Note messages
 
 # Send SysEx for Pedal or Tab commands
-
-# Check on the unit if we also need to sent complementary off
 
 TAB = 0x00
 PEDAL = 0x00
@@ -457,17 +455,10 @@ def send_tab_sysex(midi_value):
     return True
 
 
-# --- Prepare and send Volume or Dial Up/Down SysEx messages
+# --- Prepare and send Tempo or Rotor Up/Down SysEx messages
 encoder_position = macropad.encoder
 encoder_mode = False
 encoder_sign = False
-
-def process_encoder(updown):
-
-    if encoder_mode:
-        process_dial(updown)
-    else:
-        process_tempo(updown)
 
 
 def process_tempo(updown):
@@ -489,7 +480,7 @@ def process_tempo(updown):
         return False
 
     send_pedal_sysex(midi_value)
-    
+
     return True
 
 
@@ -510,33 +501,60 @@ def process_dial(updown):
         labels[3].text = "SysEx: Dial Down" + sign
     else:
         return False
-        
+
     send_pedal_sysex(midi_value)
 
     return True
 
+# Use rotory dial to toggle Rotor between fast (clockwise = True) and slow (counter-clockwise = False)
+# rotor_flag: 0 = off, 1 = fast, -1 = slow
+rotor_flag = 0
 
-# Use single key (11) to toggle Rotor between fast and slow
-rotor_flag = False
+def process_rotor(updown):
+    ROTOR_SLOW = -1
+    ROTOR_OFF = 0
+    ROTOR_FAST = 1
+
+    global rotor_flag, encoder_sign
+
+    encoder_sign = not encoder_sign
+
+    # Single shot FAST or SLOW only ignoring multiple clicks in same direction
+    if updown == 1 and rotor_flag != ROTOR_FAST:
+
+        midi_value = tab_midis["ROTOR_FAST"]
+        labels[3].text = "SysEx: Rotor Fast"
+
+        rotor_flag = ROTOR_FAST
+
+    elif updown == -1 and rotor_flag != ROTOR_SLOW:
+
+        midi_value = tab_midis["ROTOR_SLOW"]
+        labels[3].text = "SysEx: Rotor Slow"
+
+        rotor_flag = ROTOR_SLOW
+
+    else:
+        return False
+
+    send_tab_sysex(midi_value)
+
+    return True
+
+
+def process_encoder(updown):
+
+    if encoder_mode:
+        process_rotor(updown)
+    else:
+        process_tempo(updown)
+
 
 # --- Lookup by index and find the corresponding MIDI value
 def lookup_key_midi(key_id):
     global rotor_flag
 
     key_id = keys(key_id)
-
-    '''
-    # Lookup and toggle between fast and slow rotor
-    if key_id == 11:
-        if rotor_flag is True:
-            mapped_key_id = macropad_key_map_alt[11]  # Rotor fast in alternate map
-        else:
-            mapped_key_id = macropad_key_map[key_id]
-        rotor_flag = not rotor_flag
-    # Continue to lookup all other keys
-    else:
-        mapped_key_id = macropad_key_map[key_id]
-    '''
     mapped_key_id = macropad_key_map[key_id]
 
     # Extract out whether to use Pedal or Tab lookup and the Midi command
@@ -638,9 +656,9 @@ while True:
     # Use the Encoder switch to alternate between Tempo and Dial Up/Down
     if macropad.encoder_switch:
         encoder_mode = not encoder_mode
-        
+
         # Temp: Also test MIDI connect to EVM with audible test
-        test_midi()
+        # test_midi()
 
 
     # Update MacroPad pixes based on latest status
