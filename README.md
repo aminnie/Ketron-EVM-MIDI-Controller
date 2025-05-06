@@ -29,15 +29,15 @@ The controller is currently programmed with the following EVM SysEx messages:
 - Break
 - Start/End
 
-See Ketron website for more details about the EVM: https://shop.ketron.it/
-- Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
-
-Please see the source code for additional EVM functionalities and SysEx options that can be loaded to Macropad buttons.
-
 ### Macropad Controller Encoder support:
 Uses the Encoder switch to alternate between the following messages on encoder rotation.
 - Tempo Up/Down
 - Rotor Fast/Slow
+
+See Ketron website for more details about the EVM: https://shop.ketron.it/
+- Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
+
+Please see the source code for additional EVM functionalities and SysEx options that can be loaded to Macropad buttons.
   
 #### NOTE: 
 - The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
