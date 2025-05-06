@@ -11,6 +11,8 @@ Adafruit Macropad RP2040:
 
 ![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
+![evmcontroller](https://github.com/user-attachments/assets/edb9f0a2-35c4-4f5d-9993-dd2c5a799034)
+
 ### Macropad Controller Button support:
 
 The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed by modifying the values in the key mappings table.
