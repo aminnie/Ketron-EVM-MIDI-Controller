@@ -53,7 +53,7 @@ My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the Macrop
 ![evmcontroller](https://github.com/user-attachments/assets/49323e5a-62fe-4b38-81b6-59a04b765fe2)
 
 
-
+For more information or support, please email a_minnie@hotmail.com
 
 
 
