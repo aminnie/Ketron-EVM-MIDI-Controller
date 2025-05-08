@@ -38,6 +38,14 @@ See Ketron website for more details about the EVM: https://shop.ketron.it/
 - Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
 
 Please see the source code for additional EVM functionalities and SysEx options that can be loaded to Macropad buttons.
+
+### Loading the customized EVM Controller code into the Macropad:
+See the Adafruit learning website for detailed instructors on how to
+-  Prepare the board for our custom solution in the code.py file in the code directory for this repository.
+-  Download the Mu Editor to your PC. Mu will be used to connect to the board and download the code.py file into it.
+
+### Testing the EVM Macropad Controller:
+Before connecting to the EVM moodule, you may want to download and install MidiView (https://hautetechnique.com/midi/midiview/). Midi is useful to inspect the output from any MIDI controller.
   
 #### NOTE: 
 - The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
@@ -51,7 +59,6 @@ My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the Macrop
 ![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
 
 ![evmcontroller](https://github.com/user-attachments/assets/49323e5a-62fe-4b38-81b6-59a04b765fe2)
-
 
 For more information or support, please email a_minnie@hotmail.com
 
