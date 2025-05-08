@@ -47,8 +47,12 @@ See the Adafruit learning website for detailed instructors on how to
 ### Testing the EVM Macropad Controller:
 Before connecting to the EVM moodule, you may want to download and install MidiView (https://hautetechnique.com/midi/midiview/). Midi is useful to inspect and validate the output from any MIDI controller. In this case you should see the controller output the SysEx messages associated with keys or the rotary encoder.
   
-### Connecting the EVM Macropad COntroller to your EVM Module: 
-- The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup. The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
+### Connecting the EVM Macropad Controller to your EVM Module: 
+- The Ketron EVM expects all attached devices to be powered before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup.
+- The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
+
+### Customizing the EVM Cntroller button SysEx messages:
+This requires you to lookup the exact text the required message from the either the Tabs or Pedal lookup tables and copy it onto one of the keys in the Macropad configuration lookup table. See code.py for the current configuration and how to trace entries back into the lookup tables.
 
 #### Optional:
 - If you find the key illumoination distracting, you may want to turn the key lighting down or off in the code, or consider the Adafruit MX Black Keycaps with a clear window slot - https://www.adafruit.com/product/5112
