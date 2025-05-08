@@ -52,7 +52,8 @@ Before connecting to the EVM moodule, you may want to download and install MidiV
 - The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
 
 ### Customizing the EVM Cntroller button SysEx messages:
-This requires you to lookup the exact text the required message from the either the Tabs or Pedal lookup tables and copy it onto one of the keys in the Macropad configuration lookup table. See code.py for the current configuration and how to trace entries back into the lookup tables.
+This requires you to lookup the exact text the required message from the either the Tabs (pedal_midis) or Pedal (tab_midis) lookup tables and copy it onto one of the keys in the Macropad configuration (macropad_key_map) lookup table. See code.py for the current configuration and how to trace entries back into the lookup tables. 
+Note: The rotary encoder SysEx output for is fixed to tempo up/down or rotary fast/slow on successive encoder button presses. However, this can be made configurable with a coding enhancement.
 
 #### Optional:
 - If you find the key illumoination distracting, you may want to turn the key lighting down or off in the code, or consider the Adafruit MX Black Keycaps with a clear window slot - https://www.adafruit.com/product/5112
