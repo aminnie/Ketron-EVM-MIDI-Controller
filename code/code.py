@@ -1,3 +1,4 @@
+
 # Ketron EVM Button Controller
 
 # https://forum.bome.com/t/sysex-for-ketron-device/933
@@ -17,7 +18,7 @@ from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
-version = "04-23-2025"
+version = "05-15-2025"
 
 # --- Support layout with USB Left or Right
 # If USB faces left, reverse the key layout
@@ -654,11 +655,14 @@ while True:
         encoder_position = macropad.encoder
 
     # Use the Encoder switch to alternate between Tempo and Dial Up/Down
-    if macropad.encoder_switch:
+    macropad.encoder_switch_debounced.update()
+    if macropad.encoder_switch_debounced.pressed:
         encoder_mode = not encoder_mode
 
-        # Temp: Also test MIDI connect to EVM with audible test
-        # test_midi()
+        if encoder_mode == True:
+            labels[3].text = "Encoder: Rotor"
+        else:
+            labels[3].text = "Encoder: Tempo"
 
 
     # Update MacroPad pixes based on latest status
