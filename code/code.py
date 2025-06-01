@@ -1,4 +1,3 @@
-
 # Ketron EVM Button Controller
 
 # https://forum.bome.com/t/sysex-for-ketron-device/933
@@ -18,7 +17,16 @@ from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
-version = "05-15-2025"
+# Software build date to be displayed
+version = "05-28-2025"
+
+# Preparing Midi allowing for EVM to detect while it is starting up
+print("Preparing Macropad Midi")
+
+print(usb_midi.ports)
+midi = adafruit_midi.MIDI(
+    midi_in=usb_midi.ports[0], in_channel=0, midi_out=usb_midi.ports[1], out_channel=1
+)
 
 # --- Support layout with USB Left or Right
 # If USB faces left, reverse the key layout
@@ -32,7 +40,6 @@ if usb_left is True:
 
 
 def keys(key):
-
     if key < 0 or key > 11:
         print(f"Invalid key map request: {key}")
         key = 0
@@ -73,7 +80,6 @@ main_group.append(layout)
 # Display version number for 2 sec
 labels[3].text = "Pedal/Tab Controller"
 labels[6].text = "Version: " + version
-time.sleep(2)
 
 # Prepare MIDI Key to MIDI Lookups
 
@@ -348,23 +354,15 @@ macropad_key_map = [
 # Alternate list mapping is for toggled states such as rotor fast and slow
 macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-
-# Preparing Midi allowing for EVM to detect
-print("Preparing Macropad Midi")
-
-print(usb_midi.ports)
-midi = adafruit_midi.MIDI(
-    midi_in=usb_midi.ports[0], in_channel=0, midi_out=usb_midi.ports[1], out_channel=1
-)
-
 # Convert channel numbers at the presentation layer to the ones musicians use
 print("Output channel:", midi.out_channel + 1)
 print("Input channel:", midi.in_channel + 1)
 
+# Start up delay to display software version date
+time.sleep(2)
 
 # Midi Connect Basic Check
 def test_midi():
-
     outchan = 2
 
     labels[6].text = "Audible MIDI test! "
@@ -386,7 +384,6 @@ def test_midi():
 # --- Helper functions to compose and send SysEx or Note messages
 
 # Send SysEx for Pedal or Tab commands
-
 TAB = 0x00
 PEDAL = 0x00
 STATUS = 0x00
@@ -436,7 +433,7 @@ def send_pedal_sysex(midi_value):
 # For Tab, set status to tab = 00h – 77h, and 00h for led off, 7Fh led on
 # Check on the unit if we also need to sent complementary off
 def send_tab_sysex(midi_value):
-
+    
     # The manufacturer ID for the Ketron EVENT EVM arranger module is 45342
     manufacturer_id = bytearray([0x26, 0x7C])
 
@@ -460,7 +457,6 @@ def send_tab_sysex(midi_value):
 encoder_position = macropad.encoder
 encoder_mode = False
 encoder_sign = False
-
 
 def process_tempo(updown):
     global encoder_sign
@@ -544,7 +540,6 @@ def process_rotor(updown):
 
 
 def process_encoder(updown):
-
     if encoder_mode:
         process_rotor(updown)
     else:
@@ -586,7 +581,6 @@ def lookup_key_midi(key_id):
 
 # --- Prepare and send SysEx message for key pressed
 def process_key(key_id):
-
     key_id = keys(key_id)
 
     lookup_key, midi_key, midi_value = lookup_key_midi(key_id)
