@@ -6,6 +6,7 @@ import time
 
 import displayio
 import terminalio
+
 from adafruit_display_text import bitmap_label as label
 from adafruit_displayio_layout.layouts.grid_layout import GridLayout
 from adafruit_macropad import MacroPad
@@ -18,7 +19,7 @@ from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
 # Software build date to be displayed
-version = "05-28-2025"
+version = "06-10-2025"
 
 # Preparing Midi allowing for EVM to detect while it is starting up
 print("Preparing Macropad Midi")
@@ -27,6 +28,7 @@ print(usb_midi.ports)
 midi = adafruit_midi.MIDI(
     midi_in=usb_midi.ports[0], in_channel=0, midi_out=usb_midi.ports[1], out_channel=1
 )
+
 
 # --- Support layout with USB Left or Right
 # If USB faces left, reverse the key layout
@@ -40,6 +42,7 @@ if usb_left is True:
 
 
 def keys(key):
+
     if key < 0 or key > 11:
         print(f"Invalid key map request: {key}")
         key = 0
@@ -77,9 +80,11 @@ for index in range(12):
 main_group.append(title)
 main_group.append(layout)
 
-# Display version number for 2 sec
+# Display version number and start up banner for 2 sec
 labels[3].text = "Pedal/Tab Controller"
 labels[6].text = "Version: " + version
+time.sleep(2)
+
 
 # Prepare MIDI Key to MIDI Lookups
 
@@ -354,13 +359,6 @@ macropad_key_map = [
 # Alternate list mapping is for toggled states such as rotor fast and slow
 macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-# Convert channel numbers at the presentation layer to the ones musicians use
-print("Output channel:", midi.out_channel + 1)
-print("Input channel:", midi.in_channel + 1)
-
-# Start up delay to display software version date
-time.sleep(2)
-
 # Midi Connect Basic Check
 def test_midi():
     outchan = 2
@@ -380,10 +378,13 @@ def test_midi():
 
     return True
 
+# --- Configure the MacroPad
+print("MacroPad Controller Ready")
 
 # --- Helper functions to compose and send SysEx or Note messages
 
 # Send SysEx for Pedal or Tab commands
+
 TAB = 0x00
 PEDAL = 0x00
 STATUS = 0x00
@@ -433,7 +434,7 @@ def send_pedal_sysex(midi_value):
 # For Tab, set status to tab = 00h – 77h, and 00h for led off, 7Fh led on
 # Check on the unit if we also need to sent complementary off
 def send_tab_sysex(midi_value):
-    
+
     # The manufacturer ID for the Ketron EVENT EVM arranger module is 45342
     manufacturer_id = bytearray([0x26, 0x7C])
 
@@ -455,11 +456,15 @@ def send_tab_sysex(midi_value):
 
 # --- Prepare and send Tempo or Rotor Up/Down SysEx messages
 encoder_position = macropad.encoder
-encoder_mode = False
+encoder_mode = True
 encoder_sign = False
+labels[6].text = "Encoder: Rotor"
+
+tempo_start_time = 0
 
 def process_tempo(updown):
     global encoder_sign
+    global tempo_start_time
 
     encoder_sign = not encoder_sign
 
@@ -477,6 +482,9 @@ def process_tempo(updown):
         return False
 
     send_pedal_sysex(midi_value)
+
+    # Tracking encoder ticks in order to revert to Rotor after 5 secs
+    tempo_start_time = time.time()
 
     return True
 
@@ -539,6 +547,7 @@ def process_rotor(updown):
     return True
 
 
+# Toggle the encoder switch: Rotor = true, Tempo = false 
 def process_encoder(updown):
     if encoder_mode:
         process_rotor(updown)
@@ -574,7 +583,7 @@ def lookup_key_midi(key_id):
     else:
         midi_value = tab_midis[mapped_key_id]
 
-    print(f"Key at index {key_id}: {mapped_key_id}, table: {lookup_key}, MIDI value: {midi_value}")
+    #print(f"Key at index {key_id}: {mapped_key_id}, table: {lookup_key}, MIDI value: {midi_value}")
 
     return lookup_key, mapped_key_id, midi_value
 
@@ -598,29 +607,31 @@ def process_key(key_id):
 lit_keys = [False] * 12
 led_start_time = 0
 
+C_WHITE = 0x606060
+C_BLUE = 0x000020
+C_GREEN = 0x002000
+C_RED = 0x200000
+C_ORANGE = 0x701E02
+
 def preset_pixels():
     for pixel in range(12):
 
         if pixel == keys(8):
-            macropad.pixels[pixel] = 0x002000  #  Set Fill to Green
-        elif pixel == keys(3) or pixel == keys(6) or pixel == keys(9):
-            macropad.pixels[pixel] = 0x002000  # Set Set Intro/End 1-3 to Green
+            macropad.pixels[pixel] = C_GREEN    # Set Fill
         elif pixel == keys(0) or pixel == keys(2):
-            macropad.pixels[pixel] = 0x200000  # Set Start/Stop to Red
-        elif pixel == keys(11):
-            macropad.pixels[pixel] = 0x000020  # 0x303010  # Set Rotor to Yellow
+            macropad.pixels[pixel] = C_RED      # Set Start/Stop and To End
         elif pixel == keys(5):
-            macropad.pixels[pixel] = 0x701E02  # Set Break to Orange
+            macropad.pixels[pixel] = C_ORANGE   # Set Break
+        elif pixel == keys(3) or pixel == keys(6) or pixel == keys(9):
+            macropad.pixels[pixel] = C_GREEN    # Set Set Intro/End 1 to 3
         else:
-            macropad.pixels[pixel] = 0x000020  # Set remaining Arr. A to D to Blue
+            macropad.pixels[pixel] = C_BLUE     # Set remaining Arr. A to D and Variation
+            
         lit_keys[pixel] = False
-
-    # Clear status line
-    labels[6].text = ""
 
     return
 
-# Initialize all pixels for various functions
+# Initialize all pixels for various functions on  startup
 preset_pixels()
 
 # --- Start: Main processing loop
@@ -631,13 +642,23 @@ while True:
 
     if key_event:
         if key_event.pressed:
-            lit_keys[keys(key_event.key_number)] = not lit_keys[
-                keys(key_event.key_number)
-            ]
-            led_start_time = time.time()
 
             midi_key = process_key(keys(key_event.key_number))
             labels[3].text = "SysEx: " + midi_key
+            
+            # If Start/Step, set encoder to TEMPO mode
+            if midi_key == "Start/Stop":
+                encoder_mode = False
+                tempo_start_time = time.time()
+                labels[6].text = "Encoder: *Tempo*"
+
+            # Clear any recently pressed keys
+            preset_pixels()
+
+            lit_keys[keys(key_event.key_number)] = not lit_keys[
+                keys(key_event.key_number)]
+                
+            led_start_time = time.time()
 
     # Send SysEx Tempo Up and Down SysEx messages
     if encoder_position != macropad.encoder:
@@ -649,20 +670,28 @@ while True:
         encoder_position = macropad.encoder
 
     # Use the Encoder switch to alternate between Tempo and Dial Up/Down
+    # Track Tempo start time in order to revert to Rotor after 15 secs
     macropad.encoder_switch_debounced.update()
     if macropad.encoder_switch_debounced.pressed:
         encoder_mode = not encoder_mode
 
         if encoder_mode == True:
-            labels[3].text = "Encoder: Rotor"
+            labels[6].text = "Encoder: Rotor"
         else:
-            labels[3].text = "Encoder: Tempo"
+            labels[6].text = "Encoder: *Tempo*"
+            tempo_start_time = time.time()
 
+    # Revert Tempo change and encoder back to Rotor after 5 secs of no encode change
+    if encoder_mode == False:
+        tempo_cur_time = time.time()
+        if tempo_start_time != 0 and tempo_cur_time - tempo_start_time > 15:
+            encoder_mode = True
+            labels[6].text = "Encoder: Rotor"
 
-    # Update MacroPad pixes based on latest status
+    # Update MacroPad pixe;s based on latest status
     for pixel in range(12):
         if lit_keys[pixel]:
-            macropad.pixels[keys(pixel)] = 0x808080
+            macropad.pixels[keys(pixel)] = C_WHITE
 
     # Turn off LEDs after time period expire by resetting to inital state
     led_cur_time = time.time()
