@@ -1,7 +1,5 @@
 # Ketron EVM Button Controller
 
-# https://forum.bome.com/t/sysex-for-ketron-device/933
-
 import time
 
 import displayio
@@ -97,6 +95,7 @@ time.sleep(2)
 
 
 # Prepare MIDI Key to MIDI Lookups
+print("Preparing EVM Midi Lookups")
 
 # List of all the Midi Pedal Events with SysEx values supported by Ketron EVM
 pedal_midis = {
@@ -385,6 +384,61 @@ def test_midi():
     labels[6].text = ""
 
     return True
+
+
+# Read Keys configuration from USB Drive
+key_config_error = False
+
+def validate_midi_string(midi_string):
+
+    if midi_string[0:1] == "0":
+        for key, value in pedal_midis.items():        
+            if key == midi_string[2:]:
+                print(f"Pedal matched: {midi_string}")
+                return True
+
+    if midi_string[0:1] == "1":
+        for key, value in tab_midis.items():        
+            if key == midi_string[2:]:
+                print(f"Tab matched: {midi_string}")
+                return True
+        
+    return False
+
+
+def read_keys_config():
+    global key_config_error
+
+    try:
+        with open("/keysconfig.txt", "r") as f:
+            content_list = f.readlines()
+            
+            key_index = 0
+            for item in content_list:
+                key = item[0:3]
+                midi_string = item[6:-2] # Drop the '/r' carraige return in content!
+                if key == "key": # and item[5:1] == "=":
+                    
+                    # Find content midi_string in Pedal and Tab lists 
+                    if validate_midi_string(midi_string) == False:
+                        print(f"Invalid midi_string {midi_string}")
+                        labels[9].text = "Invalid: " + midi_string
+                        
+                        key_config_error = True
+                        break
+                    
+                    macropad_key_map[key_index] = midi_string
+                    #print(f"Macropad: {key_index} = {macropad_key_map[key_index]}")
+                    key_index = key_index + 1
+                else:
+                    print(f"Mapping error on: {item}")
+            print(macropad_key_map)
+                    
+    except OSError as e:
+        print(f"Error reading file: {e}")
+
+read_keys_config()
+
 
 # --- Configure the MacroPad
 print("MacroPad Controller Ready")
@@ -685,10 +739,15 @@ C_YELLOW = 0X808000
 
 def preset_pixels():
     global enc_mode
+    global key_config_error
     
     for pixel in range(12):
+        
+        # Flag invalid key configuration file
+        if key_config_error == True:
+            macropad.pixels[pixel] = C_RED
 
-        if pixel == keys(11):                   # Set Variation key Color
+        elif pixel == keys(11):                   # Set Variation key Color
             if encoder_mode == ENC_TEMPO:
                 macropad.pixels[pixel] = C_YELLOW
             elif encoder_mode == ENC_VOLUME:
