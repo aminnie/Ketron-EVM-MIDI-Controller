@@ -1,8 +1,6 @@
 # Ketron EVM Button Controller
 
-import time
-
-import displayio
+import board, displayio
 import terminalio
 
 from adafruit_display_text import bitmap_label as label
@@ -16,6 +14,7 @@ from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
+import time
 
 # Preparing Midi allowing for EVM to detect while it is starting up
 print("Preparing Macropad Midi")
@@ -26,10 +25,11 @@ midi = adafruit_midi.MIDI(
 )
 
 # Display Product and Build Date banner (20 chars)
-display_banner = "     Ketron EVM      "
+#display_banner = "     Ketron EVM      "
+display_banner = "   AJAMSONIC HS13    "
 display_sub_banner = "Pedal/Tab Controller"
 
-version = "06-14-2025"
+version = "06-16-2025"
 
 # Timeout before reverting back Tempo to Rotor on Encoder  
 tempo_timer = 60
@@ -91,7 +91,7 @@ main_group.append(layout)
 # Display version number and start up banner for 2 sec
 labels[3].text = display_sub_banner
 labels[6].text = "Version: " + version
-time.sleep(2)
+time.sleep(1)
 
 
 # Prepare MIDI Key to MIDI Lookups
@@ -347,7 +347,7 @@ tab_midis = {
 }
 
 # Controls the mapping of MacroPad keys to Ketron EVM functions
-# Lookup table prefix 0 = pedal_midis, 1 = tab_midis
+# Default Lookup table. Prefix 0 = pedal_midis, 1 = tab_midis
 macropad_key_map = [
     "0:To End",
     "0:Arr.D",
@@ -366,29 +366,21 @@ macropad_key_map = [
 # Alternate list mapping is for toggled states such as rotor fast and slow
 macropad_key_map_alt = ["", "", "", "", "", "", "", "", "", "", "", ""]
 
-# Midi Connect Basic Check
-def test_midi():
-    outchan = 2
+C_WHITE = 0x606060
+C_BLUE = 0x000020
+C_GREEN = 0x002000
+C_RED = 0x200000
+C_ORANGE = 0x701E02
+C_PURPLE = 0x800080
+C_YELLOW = 0X808000
 
-    labels[6].text = "Audible MIDI test! "
+# List mapping keyboard button/pixel colors
+macropad_color_map = [C_BLUE, C_BLUE, C_GREEN, C_GREEN, C_BLUE, C_GREEN, C_ORANGE, C_BLUE, C_GREEN, C_RED, C_BLUE, C_RED]
 
-    for x in range(4):
-        print(f"Sending note: {x}")
-
-        midi.send(NoteOn("C4", 120))
-        time.sleep(0.25)
-
-        midi.send(NoteOff("C4", 0))
-        time.sleep(0.25)
-
-    labels[6].text = ""
-
-    return True
-
-
-# Read Keys configuration from USB Drive
+# Read Macropad MIDI keys configuration from USB Drive
 key_config_error = False
 
+# Validate the MIDI value strings against the Pedal and Tab official list
 def validate_midi_string(midi_string):
 
     if midi_string[0:1] == "0":
@@ -406,7 +398,30 @@ def validate_midi_string(midi_string):
     return False
 
 
-def read_keys_config():
+# Validate that only supported colors was specified
+def validate_color_string(color_string):    
+    color_code = C_WHITE
+    
+    if color_string.lower() == "red":
+        color_code = C_RED
+    elif color_string.lower() == "green":
+        color_code = C_GREEN
+    elif color_string.lower() == "blue":
+        color_code = C_BLUE
+    elif color_string.lower() == "purple":
+        color_code = C_PURPLE
+    elif color_string.lower() == "yellow":
+        color_code = C_YELLOW
+    elif color_string.lower() == "orange":
+        color_code = C_ORANGE
+    else:
+        color_code = C_WHITE
+            
+    return color_code
+
+
+# Read the config from CircuitPy USB drive and validate formatting
+def usb_read_keys_config():
     global key_config_error
 
     try:
@@ -415,9 +430,22 @@ def read_keys_config():
             
             key_index = 0
             for item in content_list:
-                key = item[0:3]
-                midi_string = item[6:-2] # Drop the '/r' carraige return in content!
-                if key == "key": # and item[5:1] == "=":
+                # Ignore and skip comment lines
+                if item[0:1] == "#":     
+                    print(f"Skipping: {item}")
+                    continue
+
+                # Disassemble key spec'ed line into components
+                # Item example: "key02=0:Start/Stop:red" for key, pedal|tab:midistring, color
+                equal_offset = item.find('=', 0)                
+                midi_string_offset = item.find(':', 0)
+                color_offset = item.find(':', midi_string_offset+2)
+                if equal_offset != 5 or midi_string_offset == -1 or color_offset == -1:
+                    key_config_error = True
+                    break                    
+                
+                if item[0:3] == "key":
+                    midi_string = item[midi_string_offset - 1:color_offset]
                     
                     # Find content midi_string in Pedal and Tab lists 
                     if validate_midi_string(midi_string) == False:
@@ -429,21 +457,49 @@ def read_keys_config():
                     
                     macropad_key_map[key_index] = midi_string
                     #print(f"Macropad: {key_index} = {macropad_key_map[key_index]}")
+                    
+                    # Find and assign color in key spec item
+                    color_string = item[color_offset + 1:-2]
+                    macropad_color_map[keys(key_index)] = validate_color_string(color_string)
+                    
                     key_index = key_index + 1
                 else:
                     print(f"Mapping error on: {item}")
-            print(macropad_key_map)
+            #print(macropad_key_map)            
                     
     except OSError as e:
+        labels[9].text = "Error: keysconfig.txt"
         print(f"Error reading file: {e}")
+        return False
 
-read_keys_config()
+    return True
+
+usb_read_keys_config()
 
 
 # --- Configure the MacroPad
 print("MacroPad Controller Ready")
 
 # --- Helper functions to compose and send SysEx or Note messages
+
+# Midi Connectivity Basic Check
+def test_midi():
+    outchan = 2
+
+    labels[6].text = "Audible MIDI test! "
+
+    for x in range(4):
+        print(f"Sending note: {x}")
+
+        midi.send(NoteOn("C4", 120))
+        time.sleep(0.25)
+
+        midi.send(NoteOff("C4", 0))
+        time.sleep(0.25)
+
+    labels[6].text = ""
+
+    return True
 
 # Send SysEx for Pedal or Tab commands
 
@@ -516,9 +572,9 @@ def send_tab_sysex(midi_value):
     return True
 
 
-# Send Universal SysEx Master Volume Message on Channel 16. 
+# Send Universal SysEx Master Volume Message - not supported by Ketron. 
 # Using Expression CC11 until Master Volume confirmed.
-# NOTE: Needs EVM Midi Global Channel set to Channel 16!
+# NOTE: EVM Midi Global Channel must be set to Channel 16 to process CC11!
 # General SysEx: See https://www.recordingblogs.com/wiki/midi-master-volume-message
 
 cur_volume = 100 # Master volume maximum
@@ -665,6 +721,7 @@ ENC_VOLUME = 2
 enc_mode = ENC_ROTOR
 
 def process_encoder(updown):
+    
     if encoder_mode == ENC_ROTOR:
         process_rotor(updown)
     elif encoder_mode == ENC_TEMPO:
@@ -724,46 +781,38 @@ def process_key(key_id):
     return midi_key
 
 
-# Prepare Neopixels and preset colors to key functions
-# Lit represents most recent press
+# Prepare Neopixels and preset colors to key functions based on keyboard orientation (USB left/right_
 lit_keys = [False] * 12
 led_start_time = 0
-
-C_WHITE = 0x606060
-C_BLUE = 0x000020
-C_GREEN = 0x002000
-C_RED = 0x200000
-C_ORANGE = 0x701E02
-C_PURPLE = 0x800080
-C_YELLOW = 0X808000
 
 def preset_pixels():
     global enc_mode
     global key_config_error
     
+    # Step through and light each pixel
     for pixel in range(12):
         
         # Flag invalid key configuration file
         if key_config_error == True:
             macropad.pixels[pixel] = C_RED
 
-        elif pixel == keys(11):                   # Set Variation key Color
+        elif pixel == keys(11):                  # Set Variation
             if encoder_mode == ENC_TEMPO:
                 macropad.pixels[pixel] = C_YELLOW
             elif encoder_mode == ENC_VOLUME:
                 macropad.pixels[pixel] = C_PURPLE
             else:
-                macropad.pixels[pixel] = C_BLUE
+                macropad.pixels[pixel] = macropad_color_map[pixel] # C_BLUE, Set Variation
         elif pixel == keys(8):
-            macropad.pixels[pixel] = C_GREEN    # Set Fill
+            macropad.pixels[pixel] = macropad_color_map[pixel] # C_GREEN, Set Fill
         elif pixel == keys(0) or pixel == keys(2):
-            macropad.pixels[pixel] = C_RED      # Set Start/Stop and To End
+            macropad.pixels[pixel] = macropad_color_map[pixel] # C_RED, Set Start/Stop and To End
         elif pixel == keys(5):
-            macropad.pixels[pixel] = C_ORANGE   # Set Break
+            macropad.pixels[pixel] = macropad_color_map[pixel] # C_ORANGE, Set Break
         elif pixel == keys(3) or pixel == keys(6) or pixel == keys(9):
-            macropad.pixels[pixel] = C_GREEN    # Set Set Intro/End 1 to 3
+            macropad.pixels[pixel] = macropad_color_map[pixel] # C_GREEN, Set Set Intro/End 1 to 3
         else:
-            macropad.pixels[pixel] = C_BLUE     # Set Arr. A to D
+            macropad.pixels[pixel] = macropad_color_map[pixel] # C_BLUE. Set Arr. A to D
 
         lit_keys[pixel] = False
 
@@ -825,11 +874,14 @@ while True:
             tempo_start_time = time.time()
         elif encoder_mode == ENC_VOLUME:
             labels[3].text = "CC11/16: -"
-            labels[6].text = "Encoder: *M/Volume"
+            labels[6].text = "Encoder: *Volume"
             volume_start_time = time.time()
         else:
             labels[3].text = ""
             labels[6].text = "Encoder: Invalid!"
+        
+        # Set pixel 11 color to encoder mode
+        preset_pixels()
 
     # Revert Tempo encoder back to Rotor after x secs of no encode change
     if encoder_mode == ENC_TEMPO:
@@ -849,7 +901,7 @@ while True:
             labels[3].text = "SysEx: -"
             labels[6].text = "Encoder: Rotor"
 
-    # Update MacroPad pixe;s based on latest status
+    # Update MacroPad pixels based on latest status
     for pixel in range(12):
         if lit_keys[pixel]:
             macropad.pixels[keys(pixel)] = C_WHITE
