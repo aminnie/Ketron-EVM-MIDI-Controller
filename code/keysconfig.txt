@@ -1,18 +1,20 @@
 # Please ensure an exact copy of the Midi value text. No characters added or deleted and no redundant spaces!
-# Also save with an editor that only creates carraige return '/r' characaters at the end of lines. 
 # Notice the keys order: Row/columns start Bottom right and ends at Top left key
-# A;; keys will be flagged in red if an error is found in this file. The LCD display will indicated the failed key mappping.
+# Strictly follow the file formatting below to avoid errors.
+# All keys will be flagged in red if an error is found in this file. The LCD display will indicated the failed key mappping.
 # Make a copy of the original keyconfig.tzt file before modifying this file in case you need to revert back.
-# Link to Pedal and Tab Midi Mappings: Add link
-key00=0:To End
-key01=0:Arr.D
-key02=0:Start/Stop
-key03=0:Intro/End3
-key04=0:Arr.C
-key05=0:Break
-key06=0:Intro/End2
-key07=0:Arr.B
-key08=0:Fill
-key09=0:Intro/End1
-key10=0:Arr.A
-key11=1:VARIATION
+# Select a supported SysEx message from the Pedal or Tabs list linked to below.
+# Color code keys with one of the following: red, green, blue, yellow, purple, orange, or white
+# Link to supported Pedal and Tab Midi Mappings: Add link
+key00=0:To End:red
+key01=0:Arr.D:blue
+key02=0:Start/Stop:red
+key03=0:Intro/End3:green
+key04=0:Arr.C:blue
+key05=0:Break:orange
+key06=0:Intro/End2:green
+key07=0:Arr.B:blue
+key08=0:Fill:green
+key09=0:Intro/End1:green
+key10=0:Arr.A:blue
+key11=1:VARIATION:blue
