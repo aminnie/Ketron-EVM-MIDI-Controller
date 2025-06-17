@@ -39,6 +39,7 @@ Row 3:
 Uses the Encoder switch to alternate between the following messages on encoder rotation.
 - Tempo Up/Down
 - Rotor Fast/Slow
+- Volume Up/Down (Expression as no Master is availavle)
 
 See Ketron website for more details about the EVM: https://shop.ketron.it/
 - Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
