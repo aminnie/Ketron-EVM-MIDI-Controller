@@ -838,7 +838,6 @@ while True:
             if midi_key == "Start/Stop":
                 encoder_mode = ENC_TEMPO
                 tempo_start_time = time.time()
-                labels[3].text = "SysEx: -"
                 labels[6].text = "Encoder: *Tempo*"
 
             # Clear any recently pressed keys
