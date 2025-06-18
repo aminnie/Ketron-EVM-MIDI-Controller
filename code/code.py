@@ -53,7 +53,7 @@ COLOR_MAP = {
 class EVMConfig:
     def __init__(self):
         self.display_banner = "   AJAMSONIC HS13    "
-        self.display_sub_banner = "Event Controller"
+        self.display_sub_banner = "EVM MIDI Controller"
         self.version = "06-18-2025"
 
         # USB port on the left side of the MacroPad
@@ -171,9 +171,9 @@ class KeyLookupCache:
 
         # Initialize MacroPad key mappings to default MIDI message values
         self.macropad_key_map = [
-            "0:To End", "0:Arr.D", "0:Start/Stop", "0:Intro/End3",
-            "0:Arr.C", "0:Break", "0:Intro/End2", "0:Arr.B",
-            "0:Fill", "0:Intro/End1", "0:Arr.A", "1:VARIATION"
+            "1:VARIATION", "0:Arr.A", "0:Intro/End1", "0:Fill", 
+            "0:Arr.B", "0:Intro/End2","0:Break", "0:Arr.C", 
+            "0:Intro/End3", "0:Start/Stop", "0:Arr.D", "0:To End"
         ]
         self.macropad_color_map = [
             Colors.BLUE, Colors.BLUE, Colors.GREEN, Colors.GREEN,
@@ -353,13 +353,18 @@ class ConfigFileHandler:
     
     def load_config(self):
         """Load and validate configuration file"""
-        lines = self.safe_file_read("/keysconfig.txt")
-        if not lines:
-            print("Using default configuration")
-            return True
-        
         key_index = 0
         config_errors = []
+
+        try:
+            lines = self.safe_file_read("/keysconfig.txt")
+            if not lines:
+                self.config_error = True
+                print("Using default Config")
+                return False
+        except Exception as e:
+            print("Config file missing")
+            return False        
         
         for line_num, line in enumerate(lines, 1):
             parsed = self.parse_config_line(line)
@@ -524,7 +529,7 @@ class EVMController:
         self.display = DisplayManager(self.macropad, self.config)
         
         if not config_loaded:
-            self.display.update_text(9, "Config Error!")
+            self.display.update_text(9, "Config File Error!")
         
         # Initialize pixels
         self._preset_pixels()
