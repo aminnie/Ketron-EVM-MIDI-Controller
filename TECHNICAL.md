@@ -33,8 +33,8 @@ This project transforms an Adafruit MacroPad RP2040 into a professional MIDI con
 ## 📁 Project Files
 
 ### Core Software
-- `EVMController.py` - Main CircuitPython controller (optimized version)
-- `evmchanges` - Detailed documentation of all code improvements
+- `code.py` - Main CircuitPython controller (optimized version)
+- `technical_readme.md` - Detailed technical documentation of code and case
 - `keysconfig.txt` - Configuration file for key mappings (user-created)
 
 ### 3D Case Design
@@ -47,7 +47,7 @@ This project transforms an Adafruit MacroPad RP2040 into a professional MIDI con
 ## 🚀 Recent Improvements & Optimizations
 
 ### Code Architecture Overhaul
-The EVMController.py file was completely refactored from a monolithic script to a modern, class-based architecture:
+The code.py file was refactored finto a modern, class-based architecture:
 
 #### **Performance Improvements**
 - **3-5x faster key processing** through pre-computed lookup caches
@@ -67,7 +67,7 @@ EVMController      # Main orchestrating class
 ```
 
 #### **Reliability Enhancements**
-- **Comprehensive error handling** - Prevents crashes from invalid configurations
+- **Comprehensive error handling** - Improved invalid configuration checks
 - **Graceful degradation** - Continues operation even with errors  
 - **Safe array access** - Bounds checking prevents index errors
 - **Configuration validation** - Validates MIDI commands and colors
@@ -76,23 +76,6 @@ EVMController      # Main orchestrating class
 - **Python 2.7 syntax** - Uses `.format()` instead of f-strings
 - **Memory conscious** - Pre-allocated objects reduce garbage collection
 - **Exception handling** - Proper error handling for limited environments
-
-### Critical Bug Fix: 180-Degree Key Rotation
-Fixed a critical issue where physical key presses didn't match their intended logical functions:
-
-**Before (incorrect):**
-```
-Physical Key 0 → Logical Position 0
-Physical Key 11 → Logical Position 11
-```
-
-**After (corrected with 180° rotation):**
-```
-Physical Key 0 → Logical Position 11  
-Physical Key 11 → Logical Position 0
-```
-
-This ensures that pressing a physical key triggers the correct MIDI command that matches the expected layout.
 
 ## 🏗️ 3D Case Design
 
@@ -151,10 +134,10 @@ Mounting: 4× M3 screws
    - `adafruit_displayio_layout`  
    - `adafruit_macropad`
    - `adafruit_midi`
-3. **Copy `EVMController.py`** to the root directory
-4. **Create `keysconfig.txt`** (optional, uses defaults if not present)
+3. **Copy `code.py`** to the root directory
+4. **Create `keysconfig.txt`**to the roor directory (optional, uses defaults if not present)
 
-### 3. Configuration
+### 3. Modifying MIDI Messages assigned to MacroPad Keys
 Create a `keysconfig.txt` file on the CircuitPython drive:
 
 ```
@@ -164,18 +147,18 @@ Create a `keysconfig.txt` file on the CircuitPython drive:
 # command: valid MIDI command name  
 # color: red, green, blue, purple, yellow, orange, white
 
-key01=0:Start/Stop:green
-key02=0:Arr.A:blue
-key03=0:Arr.B:blue
-key04=0:Arr.C:blue
-key05=0:Arr.D:blue
-key06=0:Fill:green
-key07=0:Break:orange
-key08=0:Intro/End1:red
-key09=0:Intro/End2:red
-key10=0:Intro/End3:red
-key11=0:To End:blue
-key12=1:VARIATION:red
+key00=1:VARIATION:blue
+key01=0:Arr.A:blue
+key02=0:Intro/End1:green
+key03=0:Fill:green
+key04=0:Arr.B:blue
+key05=0:Intro/End2:green
+key06=0:Break:orange
+key07=0:Arr.C:blue
+key08=0:Intro/End3:green
+key09=0:Start/Stop:red
+key10=0:Arr.D:blue
+key11=0:To End:red
 ```
 
 ## 🎛️ Operation Guide
