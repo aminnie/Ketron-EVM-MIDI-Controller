@@ -21,31 +21,36 @@ top_cover_thickness = 3;   // Thickness of top cover (for fit calculation)
 top_cover_lip = 1;         // How much top cover overlaps case walls (mm)
 
 // RP2040 PCB parameters
-pcb_length = 100;          // RP2040 PCB length (mm)
-pcb_width = 65;            // RP2040 PCB width (mm)
+pcb_length = 107;          // RP2040 PCB length (mm)
+pcb_width = 60;            // RP2040 PCB width (mm)
 pcb_thickness = 1.6;       // Standard PCB thickness (mm)
 pcb_clearance = 1;         // Space around PCB (mm)
 pcb_height_clearance = 8;  // Space above PCB for components (mm)
 
 // USB port cutout
 usb_width = 9;             // Width of USB-C port (mm)
-usb_height = 4;            // Height of USB-C port (mm)
+usb_height = 6;            // ** Was 4 - Height of USB-C port (mm)
 usb_offset_from_edge = 2;  // Distance from PCB edge to USB center (mm)
 usb_position_y = 0;        // Y position along case width (0 = center)
 usb_corner_radius = 1;     // Rounded corners for USB hole
 
+reset_width = 6;
+reset_height = 6;
+reset_position_y = 20;
+reset_position_x = -20;
+
 // PCB mounting holes
 mount_hole_diameter = 3;   // Diameter for M3 screws (mm)
 mount_hole_positions = [   // [X, Y] positions relative to PCB center
-    [-40, -25],           // Bottom left
-    [40, -25],            // Bottom right  
-    [-40, 25],            // Top left
-    [40, 25]              // Top right
+    [-pcb_length/2 + 6, -30],   // Bottom left
+    [pcb_length/2 - 18, -30],   // Bottom right  
+    [-pcb_length/2 + 6, 30],    // Top left
+    [pcb_length/2 - 18, 30]     // Top right
 ];
 
 // Standoffs for PCB mounting
-standoff_height = 4;       // Height of PCB standoffs (mm)
-standoff_diameter = 6;     // Diameter of standoff base (mm)
+standoff_height = 6;       // Height of PCB standoffs (mm)
+standoff_diameter = 5.2;     // Diameter of standoff base (mm)
 standoff_hole_diameter = 2.5; // Hole diameter in standoff for screw (mm)
 
 // 3D printing parameters
@@ -60,19 +65,26 @@ difference() {
     union() {
         // Main case body
         case_body();
-        
+
         // PCB mounting standoffs
         pcb_standoffs();
-    }
-    
+    }        
+
     // Remove internal cavity
     internal_cavity();
-    
+
     // Remove USB port hole
     usb_port_hole();
     
+    // Remove Reset port hole
+    reset_port_hole();
+
     // Remove PCB mounting holes
     pcb_mounting_holes();
+    
+    // Cover inner lock lips on side walls
+    cover_left_lip();
+    cover_right_lip();
 }
 
 // Optional: Show PCB position for reference (comment out for final print)
@@ -218,9 +230,9 @@ module pcb_standoffs() {
 module usb_port_hole() {
     // Position USB hole on the side wall
     translate([
-        -(case_length/2 - usb_offset_from_edge), 
+        (case_length/2 - usb_offset_from_edge), 
         usb_position_y, 
-        bottom_thickness + standoff_height + pcb_thickness + usb_height/2
+        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 6
     ]) {
         rotate([0, 90, 0]) {
             // Rounded rectangle for USB port
@@ -263,6 +275,61 @@ module pcb_mounting_holes() {
         }
     }
 }
+
+// Create Reset port hole
+module reset_port_hole() {
+    // Position Reset hole on the side wall
+    translate([
+        - usb_position_y + (pcb_length/2 - 15), 
+        (case_width/2 + usb_offset_from_edge), 
+        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 6
+    ]) {
+        rotate([0, 90, 0]) {
+            // Rounded rectangle for Reset port
+            hull() {
+                translate([-(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                
+                translate([+(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                
+                translate([+(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                
+                translate([-(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+            }
+        }
+    }
+}
+
+
+// Create small PCB lip to lock top plate in on the left and right
+module cover_left_lip() {
+    // Position Reset hole on the side wall
+    color ("red") translate([
+        usb_position_y, 
+        (case_width/2 - 2), 
+        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 2
+    ]) {
+        plate = [10, 3, 1];
+        cube(plate, center = true);
+    }
+}
+
+// Create small PCB lip to lock top plate in on the left and right
+module cover_right_lip() {
+    // Position Reset hole on the side wall
+    color ("red") translate([
+        -usb_position_y, 
+        -(case_width/2 - 2), 
+        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 2
+    ]) {
+        plate = [10, 3, 1];
+        cube(plate, center = true);
+    }
+}
+
 
 // Reference module to show PCB position (for design verification)
 module pcb_reference() {

@@ -3,13 +3,15 @@
 // Author: Generated for CircuitPython EVM Controller project
 // License: MIT
 
+// Cheatsheet: https://openscad.org/cheatsheet/index.html?version=2021.01
+
 // =============================================================================
 // PARAMETERS - Easy to modify for different requirements
 // =============================================================================
 
 // Overall cover dimensions
-cover_length = 105;        // Total length of cover (mm)
-cover_width = 70;          // Total width of cover (mm)  
+cover_length = 70;         // Total length of cover (mm)
+cover_width = 105;         // Total width of cover (mm)  
 cover_thickness = 3;       // Thickness of top plate (mm)
 corner_radius = 4;         // Rounded corner radius (mm)
 
@@ -24,17 +26,17 @@ keys_offset_x = 0;         // X offset of key grid center
 keys_offset_y = -8;        // Y offset of key grid center (negative = toward bottom)
 
 // LCD/OLED display parameters
-lcd_width = 28;            // Width of LCD cutout (mm)
+lcd_width = 30;            // Width of LCD cutout (mm)
 lcd_height = 15;           // Height of LCD cutout (mm)
 lcd_corner_radius = 2;     // Corner radius for LCD hole
-lcd_offset_x = 0;          // X position relative to center
-lcd_offset_y = 22;         // Y position relative to center (positive = toward top)
+lcd_offset_x = -13;          // X position relative to center
+lcd_offset_y = 40;         // Y position relative to center (positive = toward top)
 
 // Rotary encoder parameters
 encoder_size = 12;         // Square hole size for encoder (mm)
 encoder_corner_radius = 1; // Corner radius for encoder hole
-encoder_offset_x = 35;     // X position relative to center
-encoder_offset_y = 22;     // Y position relative to center
+encoder_offset_x = 20;     // X position relative to center
+encoder_offset_y = 40;     // Y position relative to center
 
 // Mounting and clearance
 wall_thickness = 2;        // Wall thickness for sides (if adding later)
@@ -45,6 +47,7 @@ clearance = 0.2;           // General clearance for 3D printing (mm)
 // =============================================================================
 
 difference() {
+        
     // Base cover plate
     base_cover();
     
@@ -56,6 +59,7 @@ difference() {
     
     // Cut out hole for rotary encoder
     encoder_hole();
+    
 }
 
 // Optional: Show key switch positions for reference (comment out for final print)
@@ -67,20 +71,27 @@ difference() {
 
 // Create the base cover plate with rounded corners
 module base_cover() {
-    // Using hull() with corner cylinders to create rounded rectangle
-    hull() {
-        // Four corner cylinders to create rounded rectangle
-        translate([-(cover_length/2 - corner_radius), -(cover_width/2 - corner_radius), 0])
-            cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
+    
+    union() {
+        // Using hull() with corner cylinders to create rounded rectangle
+        hull() {
+            // Four corner cylinders to create rounded rectangle
+            translate([-(cover_length/2 - corner_radius), -(cover_width/2 - corner_radius), 0])
+                cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
+            
+            translate([+(cover_length/2 - corner_radius), -(cover_width/2 - corner_radius), 0])
+                cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
+            
+            translate([+(cover_length/2 - corner_radius), +(cover_width/2 - corner_radius), 0])
+                cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
+            
+            translate([-(cover_length/2 - corner_radius), +(cover_width/2 - corner_radius), 0])
+                cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
+        }
         
-        translate([+(cover_length/2 - corner_radius), -(cover_width/2 - corner_radius), 0])
-            cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
-        
-        translate([+(cover_length/2 - corner_radius), +(cover_width/2 - corner_radius), 0])
-            cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
-        
-        translate([-(cover_length/2 - corner_radius), +(cover_width/2 - corner_radius), 0])
-            cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
+        // Cover inner lock lips on side walls
+        cover_left_lip();
+        cover_right_lip();
     }
 }
 
@@ -102,7 +113,7 @@ module key_switch_holes() {
                 cube([
                     key_switch_size + clearance,
                     key_switch_size + clearance,
-                    cover_thickness + 1
+                    cover_thickness + 5
                 ], center = true);
             }
         }
@@ -134,7 +145,7 @@ module lcd_hole() {
 module encoder_hole() {
     translate([encoder_offset_x, encoder_offset_y, -0.5]) {
         // Square hole with slightly rounded corners for encoder
-        hull() {
+        rotate(45) hull() {
             // Four corner cylinders for rounded square
             translate([-(encoder_size/2 - encoder_corner_radius), -(encoder_size/2 - encoder_corner_radius), 0])
                 cylinder(h = cover_thickness + 1, r = encoder_corner_radius, $fn = 16);
@@ -182,6 +193,28 @@ module key_switch_positions() {
         }
     }
 }
+
+
+// Create small PCB lip to lock top plate in on the left and right
+module cover_left_lip() {
+    // Position Reset hole on the side wall
+        color ("red") translate([
+        -(cover_length/2 - 1), 0, 0.5]) {
+            plate = [3, 4, 1];
+            cube(plate, center = true);
+        }
+}
+
+// Create small PCB lip to lock top plate in on the left and right
+module cover_right_lip() {
+    // Position Reset hole on the side wall
+    color ("red") translate([
+        (cover_length/2 - 1), 0, 0.5]) {
+            plate = [3, 4, 1];
+            cube(plate, center = true);
+        }
+}
+
 
 // =============================================================================
 // CUSTOMIZATION EXAMPLES
