@@ -37,10 +37,15 @@ encoder_size = 12;         // Square hole size for encoder (mm)
 encoder_corner_radius = 1; // Corner radius for encoder hole
 encoder_offset_x = 20;     // X position relative to center
 encoder_offset_y = 40;     // Y position relative to center
+encoder_shaft_z = 6.5;      // Encoder shaft height
 
 // Mounting and clearance
 wall_thickness = 2;        // Wall thickness for sides (if adding later)
 clearance = 0.2;           // General clearance for 3D printing (mm)
+
+// Cover support lips
+support_lip = [3, 4, 1];    // Lightly clicks cover into case
+
 
 // =============================================================================
 // MAIN OBJECT
@@ -89,9 +94,12 @@ module base_cover() {
                 cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
         }
         
-        // Cover inner lock lips on side walls
+        // Cover inner lock/support lips on side walls
         cover_left_lip();
         cover_right_lip();
+        
+        // Wrap the open encoder shaft
+        encoder_shaft_wrap();
     }
 }
 
@@ -141,26 +149,6 @@ module lcd_hole() {
     }
 }
 
-// Create rotary encoder hole
-module encoder_hole() {
-    translate([encoder_offset_x, encoder_offset_y, -0.5]) {
-        // Square hole with slightly rounded corners for encoder
-        rotate(45) hull() {
-            // Four corner cylinders for rounded square
-            translate([-(encoder_size/2 - encoder_corner_radius), -(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + 1, r = encoder_corner_radius, $fn = 16);
-            
-            translate([+(encoder_size/2 - encoder_corner_radius), -(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + 1, r = encoder_corner_radius, $fn = 16);
-            
-            translate([+(encoder_size/2 - encoder_corner_radius), +(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + 1, r = encoder_corner_radius, $fn = 16);
-            
-            translate([-(encoder_size/2 - encoder_corner_radius), +(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + 1, r = encoder_corner_radius, $fn = 16);
-        }
-    }
-}
 
 // Reference module to show key switch positions (for design verification)
 module key_switch_positions() {
@@ -200,8 +188,7 @@ module cover_left_lip() {
     // Position Reset hole on the side wall
         color ("red") translate([
         -(cover_length/2 - 1), 0, 0.5]) {
-            plate = [3, 4, 1];
-            cube(plate, center = true);
+            cube(support_lip, center = true);
         }
 }
 
@@ -210,9 +197,41 @@ module cover_right_lip() {
     // Position Reset hole on the side wall
     color ("red") translate([
         (cover_length/2 - 1), 0, 0.5]) {
-            plate = [3, 4, 1];
-            cube(plate, center = true);
+            cube(support_lip, center = true);
         }
+}
+
+// Create rotary encoder hole through cover base and shaft cibe
+module encoder_hole() {
+    
+    encoder_z= cover_thickness + encoder_shaft_z;
+    
+    translate([encoder_offset_x, encoder_offset_y, -0.5]) {
+        // Square hole with slightly rounded corners for encoder
+        rotate(45) hull() {
+            // Four corner cylinders for rounded square
+            translate([-(encoder_size/2 - encoder_corner_radius), -(encoder_size/2 - encoder_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
+            
+            translate([+(encoder_size/2 - encoder_corner_radius), -(encoder_size/2 - encoder_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
+            
+            translate([+(encoder_size/2 - encoder_corner_radius), +(encoder_size/2 - encoder_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
+            
+            translate([-(encoder_size/2 - encoder_corner_radius), +(encoder_size/2 - encoder_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
+        }
+    }
+}
+
+// Create a wrapper around encoder sides starting at cover base (from 1 to 6 adjusted above)
+module encoder_shaft_wrap() {  //10 to center
+    color ("red") translate([encoder_offset_x, encoder_offset_y - 10, 0]) {        
+        rotate(45) hull() {
+            cube([encoder_size + 2, encoder_size + 2, cover_thickness + encoder_shaft_z]);
+        };
+    }
 }
 
 

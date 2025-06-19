@@ -11,7 +11,7 @@
 // Overall case dimensions (should match top cover)
 case_length = 105;         // Total length of case (mm)
 case_width = 70;           // Total width of case (mm)
-case_height = 15;          // Height of case walls (mm)
+case_height = 11;          // Height of case walls (mm)
 bottom_thickness = 2;      // Thickness of bottom plate (mm)
 wall_thickness = 2;        // Thickness of side walls (mm)
 corner_radius = 4;         // Rounded corner radius (mm)
@@ -29,7 +29,7 @@ pcb_height_clearance = 8;  // Space above PCB for components (mm)
 
 // USB port cutout
 usb_width = 9;             // Width of USB-C port (mm)
-usb_height = 6;            // ** Was 4 - Height of USB-C port (mm)
+usb_height = 3;            // ** Was 4 - Height of USB-C port (mm)
 usb_offset_from_edge = 2;  // Distance from PCB edge to USB center (mm)
 usb_position_y = 0;        // Y position along case width (0 = center)
 usb_corner_radius = 1;     // Rounded corners for USB hole
@@ -42,20 +42,24 @@ reset_position_x = -20;
 // PCB mounting holes
 mount_hole_diameter = 3;   // Diameter for M3 screws (mm)
 mount_hole_positions = [   // [X, Y] positions relative to PCB center
-    [-pcb_length/2 + 6, -30],   // Bottom left
-    [pcb_length/2 - 18, -30],   // Bottom right  
-    [-pcb_length/2 + 6, 30],    // Top left
-    [pcb_length/2 - 18, 30]     // Top right
+    [-pcb_length/2 + 18, -30],   // Bottom left
+    [pcb_length/2 - 6, -30],   // Bottom right  
+    [-pcb_length/2 + 18, 30],    // Top left
+    [pcb_length/2 - 6, 30]     // Top right
 ];
 
 // Standoffs for PCB mounting
-standoff_height = 6;       // Height of PCB standoffs (mm)
+standoff_height = 6;         // Height of PCB standoffs (mm)
 standoff_diameter = 5.2;     // Diameter of standoff base (mm)
 standoff_hole_diameter = 2.5; // Hole diameter in standoff for screw (mm)
 
 // 3D printing parameters
 clearance = 0.2;           // General clearance (mm)
 layer_height = 0.2;        // Your 3D printer layer height (mm)
+
+// Catching indent for Cover support lip
+cover_lip_indent = [10, 3, 1];
+
 
 // =============================================================================
 // MAIN OBJECT
@@ -303,8 +307,7 @@ module reset_port_hole() {
     }
 }
 
-
-// Create small PCB lip to lock top plate in on the left and right
+// Create small PCB lip to lock cover plate in on the left and right
 module cover_left_lip() {
     // Position Reset hole on the side wall
     color ("red") translate([
@@ -312,8 +315,7 @@ module cover_left_lip() {
         (case_width/2 - 2), 
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 2
     ]) {
-        plate = [10, 3, 1];
-        cube(plate, center = true);
+        cube(cover_lip_indent, center = true);
     }
 }
 
@@ -325,8 +327,7 @@ module cover_right_lip() {
         -(case_width/2 - 2), 
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 2
     ]) {
-        plate = [10, 3, 1];
-        cube(plate, center = true);
+        cube(cover_lip_indent, center = true);
     }
 }
 
@@ -435,8 +436,7 @@ ASSEMBLY PROCESS:
 2. Align PCB with standoffs
 3. Secure with M3 screws from bottom (4 screws)
 4. Install key switches in top cover
-5. Connect any internal wiring
-6. Place top cover on case (should fit snugly)
+5. Place top cover on case (should fit snugly)
 
 HARDWARE NEEDED:
 - 4x M3 screws, 6-8mm length
@@ -450,24 +450,5 @@ MEASUREMENTS TO VERIFY:
 5. Key switch and encoder positions match top cover
 
 Use %pcb_reference(); to visualize PCB position before printing!
-
-Customization notes:
-
-// For different case height
-case_height = 20;  // Taller case for more components
-
-// For different USB position  
-usb_offset_from_edge = 5;  // If USB is further from edge
-usb_position_y = -10;      // If USB is off-center
-
-// For different mounting holes
-mount_hole_positions = [   // Measure your actual PCB
-    [-35, -20],           // Adjust to your PCB holes
-    [35, -20], 
-    [-35, 20], 
-    [35, 20]
-];
-
-
 
 */
