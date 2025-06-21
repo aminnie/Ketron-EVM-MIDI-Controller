@@ -9,11 +9,20 @@
 // PARAMETERS - Easy to modify for different requirements
 // =============================================================================
 
+// RP2040 PCB parameters
+pcb_length = 105;          // RP2040 PCB length (mm)
+pcb_width = 60;            // RP2040 PCB width (mm)
+pcb_thickness = 1.6;       // Standard PCB thickness (mm)
+pcb_clearance = 1;         // Space around PCB (mm)
+pcb_height_clearance = 8;  // Space above PCB for components (mm)
+
 // Overall cover dimensions
-cover_length = 70;         // Total length of cover (mm)
+cover_length = 60;         // Total length of cover (mm)
 cover_width = 105;         // Total width of cover (mm)  
-cover_thickness = 3;       // Thickness of top plate (mm)
-corner_radius = 4;         // Rounded corner radius (mm)
+cover_thickness = 2;       // Thickness of top plate (mm)
+corner_radius = 1;         // Rounded corner radius (mm)
+
+
 
 // Key switch parameters (Cherry MX compatible)
 key_switch_size = 14;      // Square hole size for key switches (mm)
@@ -23,21 +32,25 @@ key_cols = 3;              // Number of columns
 
 // Key switch grid positioning (relative to cover center)
 keys_offset_x = 0;         // X offset of key grid center
-keys_offset_y = -8;        // Y offset of key grid center (negative = toward bottom)
+keys_offset_y = -13;     // Y offset of key grid center (negative = toward bottom)
 
 // LCD/OLED display parameters
 lcd_width = 30;            // Width of LCD cutout (mm)
-lcd_height = 15;           // Height of LCD cutout (mm)
+lcd_height = 17;           // Height of LCD cutout (mm)
 lcd_corner_radius = 2;     // Corner radius for LCD hole
-lcd_offset_x = -13;          // X position relative to center
+lcd_offset_x = -13;        // X position relative to center
 lcd_offset_y = 40;         // Y position relative to center (positive = toward top)
 
-// Rotary encoder parameters
-encoder_size = 12;         // Square hole size for encoder (mm)
-encoder_corner_radius = 1; // Corner radius for encoder hole
-encoder_offset_x = 20;     // X position relative to center
-encoder_offset_y = 40;     // Y position relative to center
-encoder_shaft_z = 6.5;      // Encoder shaft height
+// Rotary encoder parameters and relative to shaft center
+encoder_shaft_diameter = 6;
+encoder_size = 13;         // Square hole size for encoder + 1 mm space(mm)
+encoder_offset_x = 18.5;     // X position relative to center
+encoder_offset_y = 38.5;     // Y position relative to center
+encoder_shaft_z = 14;      // Encoder shaft height
+encoder_shaft_clearance = 2; // General clearance for 3D printing (mm)
+
+shaft_wall_width= 2;       // 
+shaft_corner_radius = 1;   // Corner radius for encoder hole
 
 // Mounting and clearance
 wall_thickness = 2;        // Wall thickness for sides (if adding later)
@@ -63,8 +76,11 @@ difference() {
     lcd_hole();
     
     // Cut out hole for rotary encoder
-    encoder_hole();
-    
+    encoder_shaft_hole();                        
+
+    // Cut out encoder shaft hole
+    encoder_round_hole();
+        
 }
 
 // Optional: Show key switch positions for reference (comment out for final print)
@@ -95,11 +111,12 @@ module base_cover() {
         }
         
         // Cover inner lock/support lips on side walls
-        cover_left_lip();
-        cover_right_lip();
+        //cover_left_lip();
+        //cover_right_lip();
         
         // Wrap the open encoder shaft
-        encoder_shaft_wrap();
+        encoder_shaft_wrap();                
+        
     }
 }
 
@@ -182,12 +199,82 @@ module key_switch_positions() {
     }
 }
 
+// Create rotary encoder hole through cover base and shaft cibe
+module encoder_shaft_wrap() {
+    
+    encoder_z = encoder_shaft_z - shaft_wall_width;  // 2mm Shaft top cover
+    
+    translate([encoder_offset_x, encoder_offset_y, 0]) {
+        // Square hole with slightly rounded corners for encoder
+        rotate(45) hull() {
+            // Four corner cylinders for rounded square
+            translate([+(encoder_size/2 + shaft_wall_width - shaft_corner_radius), -(encoder_size/2 + shaft_wall_width - shaft_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = shaft_corner_radius, $fn = 32);
+            
+            translate([-(encoder_size/2 + shaft_wall_width - shaft_corner_radius), -(encoder_size/2 + shaft_wall_width - shaft_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = shaft_corner_radius, $fn = 32);
+            
+            translate([+(encoder_size/2 + shaft_wall_width - shaft_corner_radius), (encoder_size/2 + shaft_wall_width - shaft_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = shaft_corner_radius, $fn = 32);
+            
+            translate([-(encoder_size/2 + shaft_wall_width - shaft_corner_radius), (encoder_size/2 + shaft_wall_width - shaft_corner_radius), 0])
+                cylinder(h = cover_thickness + encoder_z, r = shaft_corner_radius, $fn = 32);
+        }
+    }
+}
+
+
+
+//module rounded_shaft(width, depth, height, radius) {
+//    hull() {
+//        for (x = [0, width]) {
+//            for (y = [0, depth]) {
+//                translate([x, y, 0]) sphere(r = radius);
+//                translate([x, y, height]) sphere(r = radius);
+//            }
+//        }
+//    }
+//}
+//rounded_shaft(10, 10, 50, 2); // Creates a 10x10x50 shaft with 2mm rounded corners
+
+
+module encoder_shaft_wrap1() {
+        
+    translate([encoder_offset_x, encoder_offset_y, encoder_shaft_z / 2]) {
+        // Square hole with slightly rounded corners for encoder
+        rotate(45)
+        cube([encoder_size + shaft_wall_width,encoder_size + shaft_wall_width, encoder_shaft_z],center = true);
+    }
+}
+
+// Create a wrapper around encoder sides starting at cover base
+module encoder_shaft_hole() {
+    encoder_z = encoder_shaft_z - shaft_wall_width;  // 2mm Shaft top cover
+    
+    color("red") translate([encoder_offset_x, encoder_offset_y, encoder_z / 2 - 0.5]) {
+        // Square hole with slightly rounded corners for encoder
+        rotate(45) 
+        cube([encoder_size,encoder_size, encoder_z],center = true);
+    }    
+}
+
+// Create Encoder 6mm Shaft through hole
+module encoder_round_hole() {
+    translate([encoder_offset_x, encoder_offset_y, -0.5]) {
+        // Through hole for encoder shaft
+        cylinder(
+            h = encoder_shaft_z + 2, 
+            d = encoder_shaft_diameter + encoder_shaft_clearance, 
+            $fn = 16
+        );        
+    }
+}
 
 // Create small PCB lip to lock top plate in on the left and right
 module cover_left_lip() {
     // Position Reset hole on the side wall
         color ("red") translate([
-        -(cover_length/2 - 1), 0, 0.5]) {
+        -(cover_length/2 - 1), 1, 0.5]) {
             cube(support_lip, center = true);
         }
 }
@@ -196,76 +283,11 @@ module cover_left_lip() {
 module cover_right_lip() {
     // Position Reset hole on the side wall
     color ("red") translate([
-        (cover_length/2 - 1), 0, 0.5]) {
+        (cover_length/2 - 1), 1, 0.5]) {
             cube(support_lip, center = true);
         }
 }
 
-// Create rotary encoder hole through cover base and shaft cibe
-module encoder_hole() {
-    
-    encoder_z= cover_thickness + encoder_shaft_z;
-    
-    translate([encoder_offset_x, encoder_offset_y, -0.5]) {
-        // Square hole with slightly rounded corners for encoder
-        rotate(45) hull() {
-            // Four corner cylinders for rounded square
-            translate([-(encoder_size/2 - encoder_corner_radius), -(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
-            
-            translate([+(encoder_size/2 - encoder_corner_radius), -(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
-            
-            translate([+(encoder_size/2 - encoder_corner_radius), +(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
-            
-            translate([-(encoder_size/2 - encoder_corner_radius), +(encoder_size/2 - encoder_corner_radius), 0])
-                cylinder(h = cover_thickness + encoder_z, r = encoder_corner_radius, $fn = 16);
-        }
-    }
-}
-
-// Create a wrapper around encoder sides starting at cover base (from 1 to 6 adjusted above)
-module encoder_shaft_wrap() {  //10 to center
-    color ("red") translate([encoder_offset_x, encoder_offset_y - 10, 0]) {        
-        rotate(45) hull() {
-            cube([encoder_size + 2, encoder_size + 2, cover_thickness + encoder_shaft_z]);
-        };
-    }
-}
-
-
-// =============================================================================
-// CUSTOMIZATION EXAMPLES
-// =============================================================================
-
-/* 
-To customize this design, modify the parameters at the top:
-
-1. DIFFERENT KEY SPACING:
-   - Change key_switch_spacing for different layouts
-   - Standard Cherry MX: 19.05mm
-   - Compact layouts: 15-17mm
-
-2. DIFFERENT LCD SIZE:
-   - Adjust lcd_width and lcd_height for your display
-   - Common OLED sizes: 
-     * 0.96": ~27x15mm viewing area
-     * 1.3": ~30x16mm viewing area
-
-3. ENCODER OPTIONS:
-   - For round hole: replace encoder_hole() with cylinder
-   - For different size: change encoder_size
-
-4. BOARD FITMENT:
-   - Adjust cover_length and cover_width to match your PCB
-   - Use clearance parameter for tight/loose fit
-
-5. 3D PRINTING:
-   - Increase clearance for loose fit: 0.3-0.4mm
-   - Decrease for tight fit: 0.1-0.15mm
-   - Adjust cover_thickness for strength vs material usage
-*/
 
 // =============================================================================
 // ASSEMBLY NOTES
