@@ -49,12 +49,14 @@ COLOR_MAP = {
     'white': Colors.WHITE
 }
 
+VARIATION_KEY = 0
+
 # --- Configuration Class ---
 class EVMConfig:
     def __init__(self):
-        self.display_banner = "   AJAMSONIC HS13    "
-        self.display_sub_banner = "EVM MIDI Controller"
-        self.version = "06-18-2025"
+        self.display_banner =     "   AJAMSONIC HS13    "
+        self.display_sub_banner = "PAD Controller"
+        self.version = "OS 5.1"
 
         # USB port on the left side of the MacroPad
         self.usb_left = False
@@ -443,7 +445,7 @@ class DisplayManager:
     def show_startup_info(self):
         """Display startup information"""
         self.labels[3].text = self.config.display_sub_banner
-        self.labels[6].text = "Version: {}".format(self.config.version)
+        self.labels[6].text = "HS13: {}".format(self.config.version)
 
     def update_text(self, index, text):
         """Update label text safely"""
@@ -534,7 +536,7 @@ class EVMController:
         # Initialize pixels
         self._preset_pixels()
 
-        print("EVM Controller Ready")
+        print("HS13 Pad Controller Ready")
 
     def _init_midi(self):
         """Initialize MIDI connections"""
@@ -559,7 +561,7 @@ class EVMController:
         for pixel in range(12):
             if self.config_handler.config_error:
                 self.macropad.pixels[pixel] = Colors.RED
-            elif pixel == self.config.get_key(0):  # Variation key
+            elif pixel == self.config.get_key(VARIATION_KEY):  # Variation key
                 if self.state.encoder_mode == EncoderMode.TEMPO:
                     self.macropad.pixels[pixel] = Colors.YELLOW
                 elif self.state.encoder_mode == EncoderMode.VOLUME:
@@ -583,12 +585,12 @@ class EVMController:
             self.midi_handler.send_tab_sysex(midi_value)
 
         # Update display
-        self.display.update_text(3, "SysEx: {}".format(midi_key))
+        self.display.update_text(3, "BUTTON: {}".format(midi_key))
 
         # Handle special cases
         if midi_key == "Start/Stop":
             self.state.update_encoder_mode(EncoderMode.TEMPO)
-            self.display.update_text(6, "Encoder: *Tempo*")
+            self.display.update_text(6, "KNOB MODE: *Tempo")
 
         # Update LEDs
         self._preset_pixels()
@@ -615,12 +617,12 @@ class EVMController:
         """Process rotor fast/slow commands"""
         if direction == 1 and self.state.rotor_flag != 1:
             midi_value = self.key_cache.tab_midis["ROTOR_FAST"]
-            self.display.update_text(3, "SysEx: Rotor Fast")
+            self.display.update_text(3, "KNOB: Rotor Fast")
             self.state.rotor_flag = 1
             self.midi_handler.send_tab_sysex(midi_value)
         elif direction == -1 and self.state.rotor_flag != -1:
             midi_value = self.key_cache.tab_midis["ROTOR_SLOW"]
-            self.display.update_text(3, "SysEx: Rotor Slow")
+            self.display.update_text(3, "KNOB: Rotor Slow")
             self.state.rotor_flag = -1
             self.midi_handler.send_tab_sysex(midi_value)
 
@@ -629,20 +631,21 @@ class EVMController:
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
             midi_value = self.key_cache.pedal_midis["Tempo Up"]
-            self.display.update_text(3, "SysEx: Tempo Up{}".format(sign))
+            self.display.update_text(3, "KNOB: Tempo Up{}".format(sign))
         else:
             sign = "-" if self.state.encoder_sign else ""
             midi_value = self.key_cache.pedal_midis["Tempo Down"]
-            self.display.update_text(3, "SysEx: Tempo Down{}".format(sign))
+            self.display.update_text(3, "KNOB: Tempo Down{}".format(sign))
 
         self.midi_handler.send_pedal_sysex(midi_value)
 
     def _process_volume(self, direction):
         """Process volume up/down commands"""
+        sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
-            self.display.update_text(3, "CC11/16: E/Volume+")
+            self.display.update_text(3, "KNOB: Volume Up{}".format(sign))
         else:
-            self.display.update_text(3, "CC11/16: E/Volume-")
+            self.display.update_text(3, "KNOB: Volume Down{}".format(sign))
 
         self.midi_handler.send_volume(direction)
 
@@ -652,15 +655,15 @@ class EVMController:
         current_time = time.time()
 
         if self.state.encoder_mode == EncoderMode.ROTOR:
-            self.display.update_text(3, "SysEx: -")
-            self.display.update_text(6, "Encoder: Rotor")
+            self.display.update_text(3, "KNOB: -")
+            self.display.update_text(6, "KNOB MODE: Rotor")
         elif self.state.encoder_mode == EncoderMode.TEMPO:
-            self.display.update_text(3, "SysEx: -")
-            self.display.update_text(6, "Encoder: *Tempo")
+            self.display.update_text(3, "KNOB: -")
+            self.display.update_text(6, "KNOB MODE: *Tempo")
             self.state.tempo_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VOLUME:
-            self.display.update_text(3, "CC11/16: -")
-            self.display.update_text(6, "Encoder: *Volume")
+            self.display.update_text(3, "KNOB: -")
+            self.display.update_text(6, "KNOB MODE: *Volume")
             self.state.volume_start_time = current_time
 
         self._preset_pixels()
@@ -670,8 +673,8 @@ class EVMController:
         timeout_type = self.state.check_timeouts()
 
         if timeout_type == "timeout_tempo" or timeout_type == "timeout_volume":
-            self.display.update_text(3, "SysEx: -")
-            self.display.update_text(6, "Encoder: Rotor")
+            self.display.update_text(3, "KNOB: -")
+            self.display.update_text(6, "KNOB MODE: Rotor")
             self._preset_pixels()
         elif timeout_type == "timeout_led":
             self._preset_pixels()
