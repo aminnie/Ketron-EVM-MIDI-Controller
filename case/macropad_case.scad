@@ -23,14 +23,14 @@ inner_corner_radius = 1;   // Rounded inner corner radius
 
 case_length = pcb_length + (wall_thickness * 2);   // Total length of case (mm)
 case_width = pcb_width +  + (wall_thickness * 2);  // Total width of case (mm)
-case_height = 12;          // Height of case walls (mm)
+case_height = 14;          // Height of case walls (mm)
 
 // Top cover integration
 top_cover_thickness = 3;   // Thickness of top cover (for fit calculation)
 top_cover_lip = 1;         // How much top cover overlaps case walls (mm)
 
 // USB port cutout
-usb_width = 9;             // Width of USB-C port (mm)
+usb_width = 11;             // Width of USB-C port (mm)
 usb_height = 5;            // ** Was 4 - Height of USB-C port (mm)
 usb_offset_from_edge = 3;  // Distance from PCB edge to USB center (mm)
 usb_position_y = 0;        // Y position along case width (0 = center)
@@ -39,9 +39,9 @@ usb_corner_radius = 1;     // Rounded corners for USB hole
 // PCB mounting holes keep 2mm for wall in mind
 mount_hole_diameter = 3;   // Diameter for M3 screws (mm)
 mount_hole_positions = [   // [X, Y] positions relative to PCB center
-    [-pcb_length/2 + 17.5, -26.5],   // Bottom left
+    [-pcb_length/2 + 18.5, -26.5],   // Bottom left
     [pcb_length/2 - 4, -26.5],   // Bottom right  
-    [-pcb_length/2 + 17.5, 26.5],    // Top left
+    [-pcb_length/2 + 18.5, 26.5],    // Top left
     [pcb_length/2 - 4, 26.5]     // Top right
 ];
 
@@ -84,8 +84,8 @@ difference() {
     pcb_mounting_holes();
     
     // Cover inner lock lips on side walls
-    cover_left_lip();
-    cover_right_lip();
+    //cover_left_lip();
+    //cover_right_lip();
 }
 
 // Optional: Show PCB position for reference (comment out for final print)
@@ -233,7 +233,7 @@ module usb_port_hole() {
     translate([
         (case_length/2 - usb_offset_from_edge), 
         usb_position_y, 
-        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
+        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5.5
     ]) {
         rotate([0, 90, 0]) {
             // Rounded rectangle for USB port
@@ -281,7 +281,7 @@ module pcb_mounting_holes() {
 module reset_port_hole() {
     // Position Reset hole on the side wall
     translate([
-        - usb_position_y + (pcb_length/2 - 22.5), 
+        - usb_position_y + (pcb_length/2 - 22), 
         (case_width/2 + usb_offset_from_edge - 1), 
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
     ]) {

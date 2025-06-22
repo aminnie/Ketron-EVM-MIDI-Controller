@@ -18,11 +18,9 @@ pcb_height_clearance = 8;  // Space above PCB for components (mm)
 
 // Overall cover dimensions
 cover_length = 60;         // Total length of cover (mm)
-cover_width = 105;         // Total width of cover (mm)  
+cover_width = 105 - 1;   // Total width of cover (mm)  
 cover_thickness = 2;       // Thickness of top plate (mm)
 corner_radius = 1;         // Rounded corner radius (mm)
-
-
 
 // Key switch parameters (Cherry MX compatible)
 key_switch_size = 14;      // Square hole size for key switches (mm)
@@ -37,16 +35,16 @@ keys_offset_y = -13;     // Y offset of key grid center (negative = toward botto
 // LCD/OLED display parameters
 lcd_width = 30;            // Width of LCD cutout (mm)
 lcd_height = 17;           // Height of LCD cutout (mm)
-lcd_corner_radius = 2;     // Corner radius for LCD hole
+lcd_corner_radius = 1;     // Corner radius for LCD hole
 lcd_offset_x = -13;        // X position relative to center
-lcd_offset_y = 40;         // Y position relative to center (positive = toward top)
+lcd_offset_y = 41;         // Y position relative to center (positive = toward top)
 
 // Rotary encoder parameters and relative to shaft center
 encoder_shaft_diameter = 6;
 encoder_size = 13;         // Square hole size for encoder + 1 mm space(mm)
-encoder_offset_x = 18.5;     // X position relative to center
-encoder_offset_y = 38.5;     // Y position relative to center
-encoder_shaft_z = 14;      // Encoder shaft height
+encoder_offset_x = 18.5;   // X position relative to center
+encoder_offset_y = 38.5;   // Y position relative to center
+encoder_shaft_z = 10;      // Encoder shaft height
 encoder_shaft_clearance = 2; // General clearance for 3D printing (mm)
 
 shaft_wall_width= 2;       // 
@@ -59,6 +57,10 @@ clearance = 0.2;           // General clearance for 3D printing (mm)
 // Cover support lips
 support_lip = [3, 4, 1];    // Lightly clicks cover into case
 
+// Cover support strip
+support_strip_z = 1.7;
+support_strip_x = [support_strip_z, 10, support_strip_z];  // Support strip to prevent top cover movement when touched
+support_strip_y = [11.7, support_strip_z, support_strip_z];
 
 // =============================================================================
 // MAIN OBJECT
@@ -110,12 +112,11 @@ module base_cover() {
                 cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
         }
         
-        // Cover inner lock/support lips on side walls
-        //cover_left_lip();
-        //cover_right_lip();
-        
         // Wrap the open encoder shaft
         encoder_shaft_wrap();                
+
+        // Place support strip below case cover 
+        cover_support_strip();
         
     }
 }
@@ -224,29 +225,6 @@ module encoder_shaft_wrap() {
 }
 
 
-
-//module rounded_shaft(width, depth, height, radius) {
-//    hull() {
-//        for (x = [0, width]) {
-//            for (y = [0, depth]) {
-//                translate([x, y, 0]) sphere(r = radius);
-//                translate([x, y, height]) sphere(r = radius);
-//            }
-//        }
-//    }
-//}
-//rounded_shaft(10, 10, 50, 2); // Creates a 10x10x50 shaft with 2mm rounded corners
-
-
-module encoder_shaft_wrap1() {
-        
-    translate([encoder_offset_x, encoder_offset_y, encoder_shaft_z / 2]) {
-        // Square hole with slightly rounded corners for encoder
-        rotate(45)
-        cube([encoder_size + shaft_wall_width,encoder_size + shaft_wall_width, encoder_shaft_z],center = true);
-    }
-}
-
 // Create a wrapper around encoder sides starting at cover base
 module encoder_shaft_hole() {
     encoder_z = encoder_shaft_z - shaft_wall_width;  // 2mm Shaft top cover
@@ -289,29 +267,32 @@ module cover_right_lip() {
 }
 
 
+// Create small PCB lip to lock top plate in on the left and right
+module cover_support_strip() {
+
+    // Use as manual stoppers to prevent case movement when pressed
+    translate([cover_length/2 + 5, 25, 0.5])
+        cube(support_strip_x, center = true);
+    translate([cover_length/2 + 10, 20.5, 0.5])
+        cube(support_strip_y, center=true);
+
+    // Use as manual stoppers to prevent case movement when pressed
+    translate([cover_length/2 + 5, 13, 0.5])
+        cube(support_strip_x, center = true);
+    translate([cover_length/2 + 10, 8.5, 0.5])
+        cube(support_strip_y, center=true);
+
+    // Use as manual stoppers to prevent case movement when pressed
+    translate([cover_length/2 + 5, 1, 0.5])
+        cube(support_strip_x, center = true);
+    translate([cover_length/2 + 10, -3.5, 0.5])
+        cube(support_strip_y, center=true);
+    
+}
+
+
 // =============================================================================
 // ASSEMBLY NOTES
 // =============================================================================
 
-/*
-PRINTING TIPS:
-- Print with holes facing up (as designed)
-- No supports needed for this top cover
-- Recommended layer height: 0.2-0.3mm
-- Infill: 15-25% is sufficient for keyboard cover
-
-ASSEMBLY:
-- Key switches press-fit into 14mm holes
-- LCD/OLED typically mounts from below with screws or clips
-- Rotary encoder usually has threaded shaft with nut
-
-MEASUREMENTS TO VERIFY:
-1. Measure your actual MacroPad PCB dimensions
-2. Check key switch center-to-center spacing
-3. Measure LCD module size (not just screen size)
-4. Verify encoder mounting requirements
-
-Use the reference key positions (uncomment %key_switch_positions())
-to verify layout before printing!
-*/
 
