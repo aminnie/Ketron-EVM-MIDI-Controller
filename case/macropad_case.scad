@@ -37,7 +37,7 @@ usb_position_y = 0;        // Y position along case width (0 = center)
 usb_corner_radius = 1;     // Rounded corners for USB hole
 
 // PCB mounting holes keep 2mm for wall in mind
-mount_hole_diameter = 3;   // Diameter for M3 screws (mm)
+mount_hole_diameter = 4.56;   // Diameter for M3 screws (mm)
 mount_hole_positions = [   // [X, Y] positions relative to PCB center
     [-pcb_length/2 + 18.5, -26.5],   // Bottom left
     [pcb_length/2 - 4, -26.5],   // Bottom right  
@@ -254,6 +254,33 @@ module usb_port_hole() {
     }
 }
 
+// Create Reset port hole
+module reset_port_hole() {
+    // Position Reset hole on the side wall
+    translate([
+        -usb_position_y + (pcb_length/2 - 22), 
+        (case_width/2 + usb_offset_from_edge - 1), 
+        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
+    ]) {
+        rotate([0, 90, 0]) {
+            // Rounded rectangle for Reset port
+            hull() {
+                translate([-(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                
+                translate([+(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                
+                translate([+(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                
+                translate([-(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
+                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+            }
+        }
+    }
+}
+
 // Create PCB mounting holes
 module pcb_mounting_holes() {
     for (pos = mount_hole_positions) {
@@ -272,33 +299,6 @@ module pcb_mounting_holes() {
                     d = standoff_hole_diameter + clearance, 
                     $fn = 16
                 );
-            }
-        }
-    }
-}
-
-// Create Reset port hole
-module reset_port_hole() {
-    // Position Reset hole on the side wall
-    translate([
-        - usb_position_y + (pcb_length/2 - 22), 
-        (case_width/2 + usb_offset_from_edge - 1), 
-        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
-    ]) {
-        rotate([0, 90, 0]) {
-            // Rounded rectangle for Reset port
-            hull() {
-                translate([-(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
-                
-                translate([+(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
-                
-                translate([+(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
-                
-                translate([-(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
             }
         }
     }

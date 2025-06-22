@@ -6,7 +6,7 @@
 // Cheatsheet: https://openscad.org/cheatsheet/index.html?version=2021.01
 
 // =============================================================================
-// PARAMETERS - Easy to modify for different requirements
+// PARAMETERS
 // =============================================================================
 
 // RP2040 PCB parameters
@@ -271,6 +271,12 @@ module cover_right_lip() {
 module cover_support_strip() {
 
     // Use as manual stoppers to prevent case movement when pressed
+    translate([cover_length/2 + 5, 37, 0.5])
+        cube(support_strip_x, center = true);
+    translate([cover_length/2 + 10, 32.5, 0.5])
+        cube(support_strip_y, center=true);
+
+    // Use as manual stoppers to prevent case movement when pressed
     translate([cover_length/2 + 5, 25, 0.5])
         cube(support_strip_x, center = true);
     translate([cover_length/2 + 10, 20.5, 0.5])
@@ -291,8 +297,5 @@ module cover_support_strip() {
 }
 
 
-// =============================================================================
-// ASSEMBLY NOTES
-// =============================================================================
 
 
