@@ -54,9 +54,6 @@ standoff_hole_diameter = 2.5; // Hole diameter in standoff for screw (mm)
 clearance = 0.2;           // General clearance (mm)
 layer_height = 0.2;        // Your 3D printer layer height (mm)
 
-// Catching indent for Cover support lip
-cover_lip_indent = [10, 2.5, 2];
-
 
 // =============================================================================
 // MAIN OBJECT
@@ -77,8 +74,12 @@ difference() {
     // Remove USB port hole
     usb_port_hole();
     
-    // Remove Reset port hole
-    reset_port_hole();
+    // Do one of the following:
+    // 1. Remove Reset port hole
+    //reset_port_hole();
+
+    // 2. Remove larger QWIC port hole
+    qwiic_port_hole();
 
     // Remove PCB mounting holes
     pcb_mounting_holes();
@@ -232,7 +233,7 @@ module usb_port_hole() {
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5.5
     ]) {
         rotate([0, 90, 0]) {
-            // Rounded rectangle for USB port
+            // Rounded rectangles for USB port using cylinders
             hull() {
                 translate([-(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
                     cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
@@ -250,16 +251,17 @@ module usb_port_hole() {
     }
 }
 
+
 // Create Reset port hole
 module reset_port_hole() {
     // Position Reset hole on the side wall
     translate([
-        -usb_position_y + (pcb_length/2 - 22.5), 
+        -usb_position_y + (pcb_length/2 - 22), 
         (case_width/2 + usb_offset_from_edge - 1), 
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
     ]) {
         rotate([0, 90, 0]) {
-            // Rounded rectangle for Reset port
+            // Rounded rectangles for Reset port using cylinders
             hull() {
                 translate([-(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
                     cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
@@ -275,6 +277,21 @@ module reset_port_hole() {
             }
         }
     }
+}
+
+// Add space for QWIC adapter to be added to the board
+module qwiic_port_hole() {
+    
+    //qwiic dimensions = 6 x 4 x 4mm
+    
+    reset_width = 12;
+    reset_height = 5;
+    pcb_height = bottom_thickness + standoff_height;
+    reset_offset_z = pcb_height + pcb_thickness / 2 - reset_height;
+        
+    color("blue")
+        translate ([case_length/2 - 24, case_width/2 - 3, reset_offset_z])
+            cube(size = [reset_width, 4, reset_height]);
 }
 
 // Create PCB mounting holes
@@ -370,78 +387,10 @@ module pcb_reference() {
         color("red") {
             for (pos = mount_hole_positions) {
                 translate([pos[0], pos[1], 0]) {
-                    cylinder(h = pcb_thickness, d = 3.2, $fn = 16);
+                    cylinder(h = bottom_thickness, d = 3.2, $fn = 16);
                 }
             }
         }
     }
 }
 
-// =============================================================================
-// CUSTOMIZATION EXAMPLES
-// =============================================================================
-
-/*
-To customize this case:
-
-1. MATCH YOUR TOP COVER:
-   - Use the same case_length and case_width as your top cover
-   - Adjust corner_radius to match
-
-2. ADJUST HEIGHT:
-   - Increase case_height for more internal space
-   - Decrease for a more compact case
-   - Ensure USB port still fits properly
-
-3. PCB MOUNTING:
-   - Measure your actual PCB mounting hole positions
-   - Adjust mount_hole_positions array accordingly
-   - Change standoff_height for proper PCB positioning
-
-4. USB PORT:
-   - Measure your USB port size and position
-   - Adjust usb_width, usb_height, and usb_offset_from_edge
-   - Change usb_position_y if USB is not centered on PCB edge
-
-5. WALL THICKNESS:
-   - Increase wall_thickness for stronger case
-   - Decrease for lighter case (minimum 1.5mm for 3D printing)
-
-Example for different USB position:
-usb_offset_from_edge = 5;  // If USB is 5mm from PCB edge
-usb_position_y = -10;      // If USB is 10mm toward bottom of PCB
-*/
-
-// =============================================================================
-// ASSEMBLY NOTES
-// =============================================================================
-
-/*
-PRINTING TIPS:
-- Print with bottom down (as designed)
-- No supports needed if overhangs are < 45°
-- USB hole might need supports depending on printer
-- Recommended layer height: 0.2-0.3mm
-- Infill: 20-30% for good strength
-
-ASSEMBLY PROCESS:
-1. Insert RP2040 PCB into case
-2. Align PCB with standoffs
-3. Secure with M3 screws from bottom (4 screws)
-4. Install key switches in top cover
-5. Place top cover on case (should fit snugly)
-
-HARDWARE NEEDED:
-- 4x M3 screws, 6-8mm length
-- Optional: M3 washers if screw heads are small
-
-MEASUREMENTS TO VERIFY:
-1. Actual RP2040 PCB dimensions
-2. Mounting hole positions on your PCB
-3. USB port exact position and size
-4. Component heights (ensure clearance)
-5. Key switch and encoder positions match top cover
-
-Use %pcb_reference(); to visualize PCB position before printing!
-
-*/
