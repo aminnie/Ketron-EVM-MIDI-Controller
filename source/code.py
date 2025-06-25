@@ -1,3 +1,4 @@
+
 # Ketron EVM Button Controller
 
 import board, displayio
@@ -56,7 +57,7 @@ class EVMConfig:
     def __init__(self):
         self.display_banner =     "     Ketron EVM      "
         self.display_sub_banner = "Arranger Controller"
-        self.version = "Version 1.1"
+        self.version = "1.1"
 
         # USB port on the left side of the MacroPad
         self.usb_left = False
@@ -445,7 +446,7 @@ class DisplayManager:
     def show_startup_info(self):
         """Display startup information"""
         self.labels[3].text = self.config.display_sub_banner
-        self.labels[6].text = "HS13: {}".format(self.config.version)
+        self.labels[6].text = "Version: {}".format(self.config.version)
 
     def update_text(self, index, text):
         """Update label text safely"""
@@ -687,7 +688,6 @@ class EVMController:
 
     def run(self):
         """Main controller loop"""
-        time.sleep(1)  # Brief startup delay
 
         while True:
             try:
