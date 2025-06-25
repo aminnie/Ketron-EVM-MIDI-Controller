@@ -73,7 +73,7 @@ My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the origin
 
 The latest version of the Macropad controller:
 
-![image](https://github.com/Ketron-EVM-COntroller/resources/AMEVMPad.jpg)
+![EVMPad](resources/AMEVMPad.jpg)
 
 For more information or support, please email me at a_minnie@hotmail.com.
 
