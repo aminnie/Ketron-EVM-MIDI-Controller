@@ -1,17 +1,18 @@
 # Ketron EVM-Button-Controller
 
-This MIDI Button Controller for Ketron EVM Sound Module is based on the Adafruit MacroPad RP2040: 
+This MIDI Controller for Ketron EVM Sound Module is based on the Adafruit MacroPad RP2040:
+ 
 - Adadfruit kit: https://www.adafruit.com/product/5128
 - Learning more about the Macropad, assembly instructions, and how to download custom code into the device: https://learn.adafruit.com/adafruit-macropad-rp2040. 
 - The Starter kit can also be purchased from vendors such as Digikey: https://www.digikey.com/en/products/detail/adafruit-industries-llc/5128/14635377
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
 - The Starter kit is an assemble only, and requires no soldering or electronics experience.
 
-Adafruit Macropad RP2040:
+The latest version of the Macropad based EVM controller embedded in a case:
 
-![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
+![EVMPad](resources/AMEVMPad.jpg)
 
-Why use Macropad RP2040 to control the Ketron: The Macropad has plain old PC USB HID keyboard drivers - just like the countless cheap keypads you fill find on Amazon. However, none of these cheap devices and even some dedicated MIDI controllers support sending SysEx messages and or customization. Ketron exposes a hardware MIDI pedal interface on the EVM, but also has generously provided a MIDI over USB implmenetation. This controller is coded to send MIDI CC and SysEX messages using the Adafruit Circuit Python library.
+Why use the Macropad RP2040 to control the Ketron: The Macropad has plain old PC USB HID keyboard drivers - just like the countless cheap keypads you fill find on Amazon. However, none of these cheap devices and even some dedicated MIDI controllers support sending SysEx messages and or customization. Ketron exposes a hardware MIDI pedal interface on the EVM, but also has generously provided a MIDI over USB implmenetation. This controller is coded to send MIDI CC and SysEX messages using the Adafruit Circuit Python library.
 
 ### Macropad Controller Button support:
 
@@ -51,7 +52,7 @@ Please see the source code for additional EVM functionalities and SysEx options 
 ### Loading the customized EVM Controller code into the Macropad:
 See the Adafruit learning website for detailed instructors on how to
 -  Prepare the board for our custom solution in the code.py file in the code directory for this repository.
--  Download the Mu Editor to your PC. Mu will be used to connect to the board and download the code.py file into it.
+-  Download the Mu Editor to your PC. Mu will be used to connect to the board and up/download the code.py file for edits. Mu is optional, and you can use your favoratite code editor, or for example Notepad++ if you prefer. 
 
 ### Testing the EVM Macropad Controller:
 Before connecting to the EVM moodule, you may want to download and install MidiView (https://hautetechnique.com/midi/midiview/). Midi is useful to inspect and validate the output from any MIDI controller. In this case you should see the controller output the SysEx messages associated with keys or the rotary encoder.
@@ -71,13 +72,13 @@ Note: The rotary encoder SysEx output for is fixed to tempo up/down,  rotary fas
   - If you are going to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only.
   - If you have a need to tinker with the code, and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
 
-My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the original Macropad:
+My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the out of the box Macropad RP2040:
 
 ![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
 
-The latest version of the Macropad controller:
+Original Adafruit Macropad RP2040:
 
-![EVMPad](resources/AMEVMPad.jpg)
+![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
 For more information, support, or a completed unit please email me at a_minnie@hotmail.com.
 

@@ -33,10 +33,10 @@ keys_offset_x = 0;         // X offset of key grid center
 keys_offset_y = -13;     // Y offset of key grid center (negative = toward bottom)
 
 // LCD/OLED display parameters
-lcd_width = 30;            // Width of LCD cutout (mm)
+lcd_width = 31;            // Width of LCD cutout (mm)
 lcd_height = 17;           // Height of LCD cutout (mm)
 lcd_corner_radius = 1;     // Corner radius for LCD hole
-lcd_offset_x = -13;        // X position relative to center
+lcd_offset_x = -11;        // X position relative to center
 lcd_offset_y = 41;         // Y position relative to center (positive = toward top)
 
 // Rotary encoder parameters and relative to shaft center
@@ -113,11 +113,7 @@ module base_cover() {
         }
         
         // Wrap the open encoder shaft
-        encoder_shaft_wrap();                
-
-        // Place support strip below case cover 
-        cover_support_strip();
-        
+        encoder_shaft_wrap();                        
     }
 }
 
@@ -264,36 +260,6 @@ module cover_right_lip() {
         (cover_length/2 - 1), 1, 0.5]) {
             cube(support_lip, center = true);
         }
-}
-
-
-// Create small PCB lip to lock top plate in on the left and right
-module cover_support_strip() {
-
-    // Use as manual stoppers to prevent case movement when pressed
-    translate([cover_length/2 + 5, 37, 0.5])
-        cube(support_strip_x, center = true);
-    translate([cover_length/2 + 10, 32.5, 0.5])
-        cube(support_strip_y, center=true);
-
-    // Use as manual stoppers to prevent case movement when pressed
-    translate([cover_length/2 + 5, 25, 0.5])
-        cube(support_strip_x, center = true);
-    translate([cover_length/2 + 10, 20.5, 0.5])
-        cube(support_strip_y, center=true);
-
-    // Use as manual stoppers to prevent case movement when pressed
-    translate([cover_length/2 + 5, 13, 0.5])
-        cube(support_strip_x, center = true);
-    translate([cover_length/2 + 10, 8.5, 0.5])
-        cube(support_strip_y, center=true);
-
-    // Use as manual stoppers to prevent case movement when pressed
-    translate([cover_length/2 + 5, 1, 0.5])
-        cube(support_strip_x, center = true);
-    translate([cover_length/2 + 10, -3.5, 0.5])
-        cube(support_strip_y, center=true);
-    
 }
 
 
