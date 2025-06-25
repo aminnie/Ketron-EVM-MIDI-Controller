@@ -11,6 +11,8 @@ Adafruit Macropad RP2040:
 
 ![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
+Why use Macropad RP2040 to control the Ketron: The Macropad has plain old PC USB HID keyboard drivers - just like the countless cheap keypads you fill find on Amazon. However, none of these cheap devices and even some dedicated MIDI controllers support sending SysEx messages and or customization. Ketron exposes a hardware MIDI pedal interface on the EVM, but also has generously provided a MIDI over USB implmenetation. This controller is coded to send MIDI CC and SysEX messages using the Adafruit Circuit Python library.
+
 ### Macropad Controller Button support:
 
 The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed by modifying the values in the key mappings table.
@@ -64,8 +66,10 @@ Note: The rotary encoder SysEx output for is fixed to tempo up/down,  rotary fas
 
 #### Extra:
 - Please let me know you need a 3D case for your solution
-  - THe 3D casse .scad and .stl file is provided if you would like to print it yourself.
+  - The 3D case .scad and .stl files are available in the case directory if you would like to print it yourself. Please note that it consists of three files: The main case, the top cover, and loose fitting filler that goes in between the PCB and the top cover to keep thetop cover flush with the case top.
   - I switched to using low profile key switches and caps you see in the picture. It feels and looks much better. Contact me if I can help.
+  - If you are going to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only.
+  - If you have a need to tinker with the code, and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
 
 My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the original Macropad:
 
@@ -75,7 +79,7 @@ The latest version of the Macropad controller:
 
 ![EVMPad](resources/AMEVMPad.jpg)
 
-For more information or support, please email me at a_minnie@hotmail.com.
+For more information, support, or a completed unit please email me at a_minnie@hotmail.com.
 
 
 
