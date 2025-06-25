@@ -8,7 +8,7 @@ This MIDI Controller for Ketron EVM Sound Module is based on the Adafruit MacroP
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
 - The Starter kit is an assemble only, and requires no soldering or electronics experience.
 
-The latest version of the Macropad based EVM controller embedded in a case:
+The latest version of the Macropad based EVM controller embedded in a case with low profile key switches and new keycaps:
 
 ![EVMPad](resources/AMEVMPad.jpg)
 
