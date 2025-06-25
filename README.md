@@ -1,6 +1,6 @@
 # Ketron EVM-Button-Controller
 
-MIDI Button Controller for Ketron EVM Sound Module is based on the Adafruit MacroPad RP2040: 
+This MIDI Button Controller for Ketron EVM Sound Module is based on the Adafruit MacroPad RP2040: 
 - Adadfruit kit: https://www.adafruit.com/product/5128
 - Learning more about the Macropad, assembly instructions, and how to download custom code into the device: https://learn.adafruit.com/adafruit-macropad-rp2040. 
 - The Starter kit can also be purchased from vendors such as Digikey: https://www.digikey.com/en/products/detail/adafruit-industries-llc/5128/14635377
@@ -18,28 +18,28 @@ The USB based MIDI Controller supports the most often used Arranger buttons via 
 The controller is currently configured to the following EVM SysEx messages:
 
 Row 1:
-- Intro/End 1
-- Intro/End 2
-- Intro/End 3
-- To End
+- Intro/End 1 (green)
+- Intro/End 2 (green)
+- Intro/End 3 (green)
+- To End (red)
 
 Row 2:
-- Arr.A
-- Arr.B
-- Arr.C
-- Arr.D
+- Arr.A (blue)
+- Arr.B (blue)
+- Arr.C (blue)
+- Arr.D (blue)
 
 Row 3:
-- Variation
-- Fill
-- Break
-- Start/End
+- Variation (blue)
+- Fill (green)
+- Break (orange)
+- Start/End (red)
 
 ### Macropad Controller Encoder support:
 Uses the Encoder switch to alternate between the following messages on encoder rotation.
 - Tempo Up/Down
 - Rotor Fast/Slow
-- Volume Up/Down (Expression as no Master is availavle)
+- Volume Up/DOwn
 
 See Ketron website for more details about the EVM: https://shop.ketron.it/
 - Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
@@ -59,20 +59,23 @@ Before connecting to the EVM moodule, you may want to download and install MidiV
 - The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
 
 ### Customizing the EVM Cntroller button SysEx messages:
-This requires you to lookup the exact text the required message from the either the Tabs (pedal_midis) or Pedal (tab_midis) lookup tables and copy it onto one of the keys in the Macropad configuration (macropad_key_map) lookup table. See code.py for the current configuration and how to trace entries back into the lookup tables. 
-Note: The rotary encoder SysEx output for is fixed to tempo up/down or rotary fast/slow on successive encoder button presses. However, this can be made configurable with a coding enhancement.
+Keys are configured by updating the provided keysconfig.txt file. Tt requires you to lookup the exact text for the required SysEWx MIDI message from either the Tabs (pedal_midis) or Pedal (tab_midis) lookup tables in the Ketron MIDI documentation, and copy it onto one of the keys of the keys. See the config file for the current configuration. Please be careful with the configuration. It is validating and if an error is enountered during startup, all keys will turn red. The unit continues to function though based on the coded defaults. 
+Note: The rotary encoder SysEx output for is fixed to tempo up/down,  rotary fast/slow or volume up/down on successive encoder button presses. It is note configurable at the moment.
 
-#### Optional:
-- If you find the key illumoination distracting, you may want to turn the key lighting down or off in the code, or consider the Adafruit MX Black Keycaps with a clear window slot - https://www.adafruit.com/product/5112
-- You could also consider a 3D printed case for the Macropad: https://www.printables.com/model/138045-adafruit-macropad-case or https://www.thingiverse.com/thing:4922256/makes
+#### Extra:
+- Please let me know you need a 3D case for your solution
+  - THe 3D casse .scad and .stl file is provided if you would like to print it yourself.
+  - I switched to using low profile key switches and caps you see in the picture. It feels and looks much better. Contact me if I can help.
 
-My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the Macropad:
+My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the original Macropad:
 
 ![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
 
+The latest version of the Macropad controller:
+
 ![evmcontroller](https://github.com/user-attachments/assets/49323e5a-62fe-4b38-81b6-59a04b765fe2)
 
-For more information or support, please email a_minnie@hotmail.com
+For more information or support, please email me at a_minnie@hotmail.com.
 
 
 
