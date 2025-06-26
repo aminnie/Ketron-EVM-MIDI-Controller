@@ -29,8 +29,10 @@ Assembly Instructions:
   - I start with the middle row centers, followed by the outer corners.
 - Insert the PCB assembly into the bottom case.
   - Ensure you have the USB connector aligned with the case USB opening!
-  - Insert the PCB assembly at the LCD corner first so that Reset button goes into its resepctive whole with out too much pressure
+  - Insert the PCB assembly at the LCD corner first so that Reset button goes into its respctive whole with out too much pressure
 - Use 4 x 3mm screws to secure the bottom case to the PCB and the keyboard assembly.
-  - To remobve the keyboard assembly, loosen all four screws, and remove the PCB out of the case by pushing the screws in.  
+  - To remobve the keyboard assembly, loosen all four screws, and remove the PCB out of the case by pushing the screws in.
+- Insert the encoder knob onto the exposed shaft
+  - Press the encoder button a few times and to ensure it is seated correctly.
   
   
