@@ -39,7 +39,7 @@ class Colors:
     PURPLE = 0x800080
     YELLOW = 0x808000
 
-# Color mapping dictionary for efficient lookup
+# Color mapping dictionary
 COLOR_MAP = {
     'red': Colors.RED,
     'green': Colors.GREEN,
@@ -50,6 +50,7 @@ COLOR_MAP = {
     'white': Colors.WHITE
 }
 
+# Key used to reflect timed Eccoder mode changes on LED
 VARIATION_KEY = 0
 
 # --- Configuration Class ---
@@ -60,7 +61,7 @@ class EVMConfig:
         self.version = "1.1"
 
         # USB port on the left side of the MacroPad
-        self.usb_left = False
+        self.usb_left = True
 
         # Timers for tempo, volume, and key brightness
         self.tempo_timer = 60
@@ -69,7 +70,7 @@ class EVMConfig:
 
         # Initialize MacroPad key mappings
         self.key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-        if self.usb_left:
+        if not self.usb_left:
             self.key_map = [11 - i for i in range(12)]
 
     def get_key(self, key):
@@ -94,7 +95,7 @@ class MIDIHandler:
         self.cur_volume = 100
 
     def send_pedal_sysex(self, midi_value):
-        """Send SysEx for Pedal commands with memory optimization"""
+        """Send SysEx for Pedal commands"""
         try:
             # Send ON followed by OFF Message
             if midi_value < 128:
@@ -122,7 +123,7 @@ class MIDIHandler:
             return False
 
     def send_tab_sysex(self, midi_value):
-        """Send SysEx for Tab commands with memory optimization"""
+        """Send SysEx for Tab commands"""
         try:
             self.tab_sysex[0] = midi_value
             self.tab_sysex[1] = MIDIStatus.ON
@@ -172,7 +173,8 @@ class KeyLookupCache:
         self.config = config
         self.cache = {}
 
-        # Initialize MacroPad key mappings to default MIDI message values
+        # Initialize MacroPad key & color mappings to default MIDI message values
+        # USB drive keysconfig.txt file will override if present
         self.macropad_key_map = [
             "1:VARIATION", "0:Arr.A", "0:Intro/End1", "0:Fill",
             "0:Arr.B", "0:Intro/End2","0:Break", "0:Arr.C",
@@ -184,7 +186,7 @@ class KeyLookupCache:
             Colors.GREEN, Colors.RED, Colors.BLUE, Colors.RED
         ]
 
-        # MIDI lookup dictionaries
+        # Ketron Pedal and Tab MIDI lookup dictionaries
         self.pedal_midis = self._init_pedal_midis()
         self.tab_midis = self._init_tab_midis()
 
@@ -274,7 +276,7 @@ class KeyLookupCache:
         }
 
     def _build_cache(self):
-        """Build lookup cache at startup for performance"""
+        """Build lookup cache at startup"""
         for i in range(12):
             key_id = self.config.get_key(i)
             mapped_key = self.macropad_key_map[key_id]
@@ -306,8 +308,9 @@ class KeyLookupCache:
 
 # --- Configuration File Handler ---
 class ConfigFileHandler:
-    def __init__(self, key_cache):
+    def __init__(self, key_cache, config):
         self.key_cache = key_cache
+        self.config = config
         self.config_error = False
 
     def safe_file_read(self, filename):
@@ -379,13 +382,15 @@ class ConfigFileHandler:
                 if not self.validate_midi_string(parsed['type'], parsed['command']):
                     raise ValueError("Invalid MIDI command: {}".format(parsed['command']))
 
+                mapped_key_index = self.config.get_key(key_index)
+
                 # Apply configuration
                 midi_string = "{}:{}".format(parsed['type'], parsed['command'])
-                self.key_cache.macropad_key_map[key_index] = midi_string
+                self.key_cache.macropad_key_map[mapped_key_index] = midi_string
 
                 # Set color
                 color_code = self.key_cache.validate_color_string(parsed['color'])
-                self.key_cache.macropad_color_map[key_index] = color_code
+                self.key_cache.macropad_color_map[mapped_key_index] = color_code
 
                 key_index += 1
                 if key_index >= 12:
@@ -471,7 +476,7 @@ class StateManager:
         self.lit_keys = [False] * 12
 
     def update_encoder_mode(self, new_mode):
-        """Update encoder mode with timing reset"""
+        """Update encoder mode with timed reset"""
         self.encoder_mode = new_mode
         current_time = time.time()
 
@@ -523,7 +528,7 @@ class EVMController:
 
         # Initialize key cache and config
         self.key_cache = KeyLookupCache(self.config)
-        self.config_handler = ConfigFileHandler(self.key_cache)
+        self.config_handler = ConfigFileHandler(self.key_cache, self.config)
 
         # Load configuration
         config_loaded = self.config_handler.load_config()
@@ -537,7 +542,7 @@ class EVMController:
         # Initialize pixels
         self._preset_pixels()
 
-        print("HS13 Pad Controller Ready")
+        print("Pad Controller Ready")
 
     def _init_midi(self):
         """Initialize MIDI connections"""
@@ -688,7 +693,6 @@ class EVMController:
 
     def run(self):
         """Main controller loop"""
-
         while True:
             try:
                 # Handle key events
