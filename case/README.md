@@ -1,6 +1,6 @@
 # Ketron EVM-Button-Controller Enclosure
 
-More details and refinement of the OpenScad 3D design and code to follow.
+More details and refinement of the OpenSCAD 3D (https://openscad.org/) design and code to follow.
 
 The controller enclosure consists of three components:
 - Bottom case
