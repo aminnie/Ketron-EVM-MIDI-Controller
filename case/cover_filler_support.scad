@@ -17,7 +17,7 @@ pcb_clearance = 1;         // Space around PCB (mm)
 pcb_height_clearance = 8;  // Space above PCB for components (mm)
 
 // Overall cover dimensions
-cover_length = 78;          // Total width of cover (mm)  
+cover_length = 103;          // Total width of cover (mm)  
 cover_width = 58;         // Total length of cover (mm)
 cover_thickness = 1.5;       // Thickness of top plate (mm)
 corner_radius = 1;         // Rounded corner radius (mm)
@@ -30,7 +30,7 @@ key_cols = 3;              // Number of columns
 
 // Key switch grid positioning (relative to cover center)
 keys_offset_x = 0;         // X offset of key grid center
-keys_offset_y = 0;       // Y offset of key grid center (negative = toward bottom)
+keys_offset_y = -13;       // Y offset of key grid center (negative = toward bottom)
 
 // Mounting and clearance
 wall_thickness = 2;        // Wall thickness for sides (if adding later)
@@ -48,6 +48,10 @@ difference() {
     // Cut out holes for key switches
     key_switch_holes();
     
+    // Create holes around LCD and encoder switch
+    lcd_hole();
+    
+    encoder_hole();
 }
 
 // =============================================================================
@@ -102,3 +106,16 @@ module key_switch_holes() {
     }
 }
 
+
+// Create hole for LCD display
+module lcd_hole() {
+    translate([-13, 38,-0.5])
+        cube([37, 25, cover_thickness + 5], center = true);
+}
+
+
+// Create hole for the encoder switch
+module encoder_hole() {
+    translate([18, 38,-0.5])
+        cube([20, 25, cover_thickness + 5], center = true);
+}
