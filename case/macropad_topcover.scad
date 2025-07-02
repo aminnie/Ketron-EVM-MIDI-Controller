@@ -5,6 +5,15 @@
 
 // Cheatsheet: https://openscad.org/cheatsheet/index.html?version=2021.01
 
+// This file is the design for the top cover of a case designed to enclose the 
+// Adafruit MacroPad RP2040 hardware module. Tve cover comtains 12 holes for the 
+// key switches. The holes are sized to enssure a tight fit for the keys switches
+// Key swiicthes are carefully inserted through the top cover holes, the looser
+// fitting filler layer in to the keys switches sockes that Adafruit has soldered
+// into the board. The cover also completely encloses the Encoder on the PCB.
+// The encoder nut and washer is to be removed during assembly and added back
+// on top of the shaft cover and used to secure the top cover to the PCB board. 
+
 // =============================================================================
 // PARAMETERS
 // =============================================================================
@@ -17,8 +26,8 @@ pcb_clearance = 1;         // Space around PCB (mm)
 pcb_height_clearance = 8;  // Space above PCB for components (mm)
 
 // Overall cover dimensions
-cover_length = 60;         // Total length of cover (mm)
-cover_width = 105 - 1;   // Total width of cover (mm)  
+cover_length = 105 - 1;   // Total length of cover (mm)  
+cover_width = 60;         // Total width of cover (mm)
 cover_thickness = 2;       // Thickness of top plate (mm)
 corner_radius = 1;         // Rounded corner radius (mm)
 
@@ -99,16 +108,16 @@ module base_cover() {
         // Using hull() with corner cylinders to create rounded rectangle
         hull() {
             // Four corner cylinders to create rounded rectangle
-            translate([-(cover_length/2 - corner_radius), -(cover_width/2 - corner_radius), 0])
+            translate([-(cover_width/2 - corner_radius), -(cover_length/2 - corner_radius), 0])
                 cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
             
-            translate([+(cover_length/2 - corner_radius), -(cover_width/2 - corner_radius), 0])
+            translate([+(cover_width/2 - corner_radius), -(cover_length/2 - corner_radius), 0])
                 cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
             
-            translate([+(cover_length/2 - corner_radius), +(cover_width/2 - corner_radius), 0])
+            translate([+(cover_width/2 - corner_radius), +(cover_length/2 - corner_radius), 0])
                 cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
             
-            translate([-(cover_length/2 - corner_radius), +(cover_width/2 - corner_radius), 0])
+            translate([-(cover_width/2 - corner_radius), +(cover_length/2 - corner_radius), 0])
                 cylinder(h = cover_thickness, r = corner_radius, $fn = 32);
         }
         
@@ -248,7 +257,7 @@ module encoder_round_hole() {
 module cover_left_lip() {
     // Position Reset hole on the side wall
         color ("red") translate([
-        -(cover_length/2 - 1), 1, 0.5]) {
+        -(cover_width/2 - 1), 1, 0.5]) {
             cube(support_lip, center = true);
         }
 }
@@ -257,7 +266,7 @@ module cover_left_lip() {
 module cover_right_lip() {
     // Position Reset hole on the side wall
     color ("red") translate([
-        (cover_length/2 - 1), 1, 0.5]) {
+        (cover_width/2 - 1), 1, 0.5]) {
             cube(support_lip, center = true);
         }
 }

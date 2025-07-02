@@ -4,11 +4,15 @@
 // Author: Generated for CircuitPython EVM Controller project
 // License: MIT
 
+// The bottom case along with the filler layer and cover OpenSCAD models provivided
+// wraps the Adafruit MacroPad RP2040 in a tightfitting case. The case has a USB port
+// the reset button opening, as well as 4 mounting holes to fasten the PCD to the case.
+
 // =============================================================================
-// PARAMETERS - Match your top cover dimensions
+// PARAMETERS
 // =============================================================================
 
-// RP2040 PCB parameters
+// Adafruit Macropad RP2040 PCB parameters
 pcb_length = 105;          // RP2040 PCB length (mm)
 pcb_width = 60;            // RP2040 PCB width (mm)
 pcb_thickness = 1.6;       // Standard PCB thickness (mm)
@@ -377,71 +381,3 @@ module pcb_reference() {
     }
 }
 
-// =============================================================================
-// CUSTOMIZATION EXAMPLES
-// =============================================================================
-
-/*
-To customize this case:
-
-1. MATCH YOUR TOP COVER:
-   - Use the same case_length and case_width as your top cover
-   - Adjust corner_radius to match
-
-2. ADJUST HEIGHT:
-   - Increase case_height for more internal space
-   - Decrease for a more compact case
-   - Ensure USB port still fits properly
-
-3. PCB MOUNTING:
-   - Measure your actual PCB mounting hole positions
-   - Adjust mount_hole_positions array accordingly
-   - Change standoff_height for proper PCB positioning
-
-4. USB PORT:
-   - Measure your USB port size and position
-   - Adjust usb_width, usb_height, and usb_offset_from_edge
-   - Change usb_position_y if USB is not centered on PCB edge
-
-5. WALL THICKNESS:
-   - Increase wall_thickness for stronger case
-   - Decrease for lighter case (minimum 1.5mm for 3D printing)
-
-Example for different USB position:
-usb_offset_from_edge = 5;  // If USB is 5mm from PCB edge
-usb_position_y = -10;      // If USB is 10mm toward bottom of PCB
-*/
-
-// =============================================================================
-// ASSEMBLY NOTES
-// =============================================================================
-
-/*
-PRINTING TIPS:
-- Print with bottom down (as designed)
-- No supports needed if overhangs are < 45°
-- USB hole might need supports depending on printer
-- Recommended layer height: 0.2-0.3mm
-- Infill: 20-30% for good strength
-
-ASSEMBLY PROCESS:
-1. Insert RP2040 PCB into case
-2. Align PCB with standoffs
-3. Secure with M3 screws from bottom (4 screws)
-4. Install key switches in top cover
-5. Place top cover on case (should fit snugly)
-
-HARDWARE NEEDED:
-- 4x M3 screws, 6-8mm length
-- Optional: M3 washers if screw heads are small
-
-MEASUREMENTS TO VERIFY:
-1. Actual RP2040 PCB dimensions
-2. Mounting hole positions on your PCB
-3. USB port exact position and size
-4. Component heights (ensure clearance)
-5. Key switch and encoder positions match top cover
-
-Use %pcb_reference(); to visualize PCB position before printing!
-
-*/

@@ -5,11 +5,19 @@
 
 // Cheatsheet: https://openscad.org/cheatsheet/index.html?version=2021.01
 
+// The cover filler is a loose fitting template that is placed underneath the
+// Macropad cover to secure the cover. The cover
+// layer goes on top of this later, and key switches are inserted into the 
+// PCB board through the tight fitting cover layer amd the cover filler.
+// Please considerer using the newer covver filler support later that also
+// wraps around the LCD screen and then encoder shaft to better support the
+// top cover.
+
 // =============================================================================
 // PARAMETERS
 // =============================================================================
 
-// RP2040 PCB parameters
+// Adafruit Macropad RP2040 PCB parameters
 pcb_length = 105;          // RP2040 PCB length (mm)
 pcb_width = 60;            // RP2040 PCB width (mm)
 pcb_thickness = 1.6;       // Standard PCB thickness (mm)
