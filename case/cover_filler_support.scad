@@ -7,8 +7,8 @@
 
 // The cover filler support is a loose fitting template that is placed underneath 
 // the Macropad cover to secure the cover and wrap around LCD screen. The cover
-// layer goes on top of this later, and key switches are inserted into the 
-// PCB board through the tight fitting cover layer amd the cover filler.
+// layer goes on top of this layer, and key switches are inserted into the 
+// PCB board through the tight fitting cover layer and the cover filler.
 
 // =============================================================================
 // PARAMETERS
