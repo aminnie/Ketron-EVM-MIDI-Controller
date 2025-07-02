@@ -52,7 +52,10 @@ Please see the source code for additional EVM functionalities and SysEx options 
 ### Loading the customized EVM Controller code into the Macropad:
 See the Adafruit learning website for detailed instructors on how to
 -  Prepare the board for our custom solution in the code.py file in the code directory for this repository.
--  Download the Mu Editor to your PC. Mu will be used to connect to the board and up/download the code.py file for edits. Mu is optional, and you can use your favoratite code editor, or for example Notepad++ if you prefer. 
+-  You have the following options:
+   - Simply copy the code files from a local disk to the MacroPad USB drive mounted as 'CIRCUITPY'.  
+   - Download the Mu Editor to your PC. Mu will connect to the Macropad board and allow you up/download and edit the code.py file. It also has a REPL terminal that can be used to interact with the board during development. 
+   - Use your favoratite code editor - Visual Studio Code, Cursor, Notepad++ if you prefer.
 
 ### Testing the EVM Macropad Controller:
 Before connecting to the EVM moodule, you may want to download and install MidiView (https://hautetechnique.com/midi/midiview/). Midi is useful to inspect and validate the output from any MIDI controller. In this case you should see the controller output the SysEx messages associated with keys or the rotary encoder.
