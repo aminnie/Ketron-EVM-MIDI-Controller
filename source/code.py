@@ -56,9 +56,12 @@ VARIATION_KEY = 0
 # --- Configuration Class ---
 class EVMConfig:
     def __init__(self):
-        self.display_banner =     "     Ketron EVM      "
-        self.display_sub_banner = "Arranger Controller"
-        self.version = "1.1"
+        #self.display_banner =     "     Ketron EVM      "
+        #self.display_sub_banner = "Arranger Controller"
+        #self.version = "1.1"
+        self.display_banner =       "    AJAMSONIC HS13    "
+        self.display_sub_banner = "Pad Controller"
+        self.version = "5.1"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -451,7 +454,8 @@ class DisplayManager:
     def show_startup_info(self):
         """Display startup information"""
         self.labels[3].text = self.config.display_sub_banner
-        self.labels[6].text = "Version: {}".format(self.config.version)
+        # self.labels[6].text = "Version: {}".format(self.config.version)
+        self.labels[6].text = "OS: {}".format(self.config.version)
 
     def update_text(self, index, text):
         """Update label text safely"""
