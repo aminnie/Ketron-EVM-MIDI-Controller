@@ -21,6 +21,7 @@ class EncoderMode:
     ROTOR = 0
     TEMPO = 1
     VOLUME = 2
+    VALUE = 3
 
 class MIDIType:
     PEDAL = 0
@@ -69,6 +70,8 @@ class EVMConfig:
         # Timers for tempo, volume, and key brightness
         self.tempo_timer = 60
         self.volume_timer = 60
+        self.value_timer = 60
+        self.version_timer = 15
         self.key_bright_timer = 0.20
 
         # Initialize MacroPad key mappings
@@ -454,8 +457,9 @@ class DisplayManager:
     def show_startup_info(self):
         """Display startup information"""
         self.labels[3].text = self.config.display_sub_banner
-        # self.labels[6].text = "Version: {}".format(self.config.version)
-        self.labels[6].text = "OS: {}".format(self.config.version)
+        self.labels[6].text = "KNOB MODE: Rotor"
+        # self.labels[9].text = "Version: {}".format(self.config.version)
+        self.labels[9].text = "OS: {}".format(self.config.version)
 
     def update_text(self, index, text):
         """Update label text safely"""
@@ -474,7 +478,12 @@ class StateManager:
         # Timing
         self.tempo_start_time = 0
         self.volume_start_time = 0
+        self.value_start_time = 0
+        self.version_start_time = 0
         self.led_start_time = 0
+
+        # Preset version display to end after 15s
+        self.version_start_time = time.time()
 
         # LED state
         self.lit_keys = [False] * 12
@@ -488,6 +497,8 @@ class StateManager:
             self.tempo_start_time = current_time
         elif new_mode == EncoderMode.VOLUME:
             self.volume_start_time = current_time
+        elif new_mode == EncoderMode.VALUE:
+            self.value_start_time = current_time
 
     def check_timeouts(self):
         """Check and handle encoder mode timeouts"""
@@ -506,6 +517,19 @@ class StateManager:
             current_time - self.volume_start_time > self.config.volume_timer):
             self.encoder_mode = EncoderMode.ROTOR
             return "timeout_volume"
+
+        # Revert value to rotor after timeout
+        if (self.encoder_mode == EncoderMode.VALUE and
+            self.value_start_time != 0 and
+            current_time - self.value_start_time > self.config.value_timer):
+            self.encoder_mode = EncoderMode.ROTOR
+            return "timeout_value"
+
+        # Clear version value after timeout
+        if (self.version_start_time != 0 and
+            current_time - self.version_start_time > self.config.version_timer):
+            self.version_start_time = 0
+            return "timeout_version"
 
         # Check LED timeout
         if (self.led_start_time != 0 and
@@ -576,6 +600,8 @@ class EVMController:
                     self.macropad.pixels[pixel] = Colors.YELLOW
                 elif self.state.encoder_mode == EncoderMode.VOLUME:
                     self.macropad.pixels[pixel] = Colors.PURPLE
+                elif self.state.encoder_mode == EncoderMode.VALUE:
+                    self.macropad.pixels[pixel] = Colors.WHITE
                 else:
                     self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
             else:
@@ -622,6 +648,9 @@ class EVMController:
         elif self.state.encoder_mode == EncoderMode.VOLUME:
             self._process_volume(direction)
             self.state.volume_start_time = current_time
+        elif self.state.encoder_mode == EncoderMode.VALUE:
+            self._process_value(direction)
+            self.state.value_start_time = current_time
 
     def _process_rotor(self, direction):
         """Process rotor fast/slow commands"""
@@ -659,9 +688,23 @@ class EVMController:
 
         self.midi_handler.send_volume(direction)
 
+    def _process_value(self, direction):
+        """Process value (DIAL) up/down commands"""
+        sign = "+" if self.state.encoder_sign else ""
+        if direction == 1:
+            midi_value = self.key_cache.tab_midis["DIAL_UP"]
+            self.display.update_text(3, "KNOB: Dial Up{}".format(sign))
+        else:
+            sign = "-" if self.state.encoder_sign else ""
+            midi_value = self.key_cache.tab_midis["DIAL_DOWN"]
+            self.display.update_text(3, "KNOB: Dial Down{}".format(sign))
+
+        self.midi_handler.send_tab_sysex(midi_value)
+
     def _handle_encoder_switch(self):
-        """Handle encoder switch press"""
-        self.state.encoder_mode = (self.state.encoder_mode + 1) % 3
+        """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""
+        self.state.encoder_mode = self.state.encoder_mode + 1
+        if self.state.encoder_mode > 2: self.state.encoder_mode = 0
         current_time = time.time()
 
         if self.state.encoder_mode == EncoderMode.ROTOR:
@@ -675,6 +718,10 @@ class EVMController:
             self.display.update_text(3, "KNOB: -")
             self.display.update_text(6, "KNOB MODE: *Volume")
             self.state.volume_start_time = current_time
+        elif self.state.encoder_mode == EncoderMode.VALUE:
+            self.display.update_text(3, "KNOB: -")
+            self.display.update_text(6, "KNOB MODE: *Dial")
+            self.state.value_start_time = current_time
 
         self._preset_pixels()
 
@@ -686,6 +733,8 @@ class EVMController:
             self.display.update_text(3, "KNOB: -")
             self.display.update_text(6, "KNOB MODE: Rotor")
             self._preset_pixels()
+        elif timeout_type == "timeout_version":
+            self.display.update_text(9, "")
         elif timeout_type == "timeout_led":
             self._preset_pixels()
 
