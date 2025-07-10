@@ -1,6 +1,6 @@
 # Ketron EVM-Button-Controller
 
-This MIDI Controller for Ketron EVM Sound Module is based on the Adafruit MacroPad RP2040:
+This MIDI Pad Controller for Ketron EVM Sound Module is based on the Adafruit MacroPad RP2040 circuit board:
  
 - Adadfruit kit: https://www.adafruit.com/product/5128
 - Learning more about the Macropad, assembly instructions, and how to download custom code into the device: https://learn.adafruit.com/adafruit-macropad-rp2040. 
@@ -8,15 +8,15 @@ This MIDI Controller for Ketron EVM Sound Module is based on the Adafruit MacroP
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
 - The Starter kit is an assemble only, and requires no soldering or electronics experience.
 
-The latest version of the Macropad based EVM controller embedded in a case with low profile key switches and new keycaps:
+The EVM Pad controller embedded in a case with low profile key switches and LED window keycaps:
 
 ![EVMPad](resources/AMEVMPad.jpg)
 
-Why use the Macropad RP2040 to control the Ketron: The Macropad has plain old PC USB HID keyboard drivers - just like the countless cheap keypads you fill find on Amazon. However, none of these cheap devices and even some dedicated MIDI controllers support sending SysEx messages and or customization. Ketron exposes a hardware MIDI pedal interface on the EVM, but also has generously provided a MIDI over USB implmenetation. This controller is coded to send MIDI CC and SysEX messages using the Adafruit Circuit Python library.
+Why use the Macropad RP2040 to control the Ketron: The Macropad has USB HID keyboard drivers - just like the countless keypads you fill find on Amazon. However, these devices and even some dedicated MIDI controllers do not support sending MIDI SysEx messages. Ketron exposes a hardware MIDI pedal interface on the EVM, but also has generously provided a MIDI over USB implmenetation. This controller is coded to send MIDI CC and SysEX messages over USB using the Adafruit Circuit Python library.
 
 ### Macropad Controller Button support:
 
-The USB based MIDI Controller supports the most often used Arranger buttons via SysEx messages as an alternative to the hardware Pedal interface. Button assignmeents can be changed by modifying the values in the key mappings table.
+The USB based MIDI Controller supports the most often used Arranger functions via SysEx messages as an alternative to the Ketron hardware Pedal device. Button assignmeents can be changed by modifying the values in a config file saved on the controller's USB drive.
 
 The controller is currently configured to the following EVM SysEx messages:
 
@@ -39,15 +39,17 @@ Row 3:
 - Start/End (red)
 
 ### Macropad Controller Encoder support:
-Uses the Encoder switch to alternate between the following messages on encoder rotation.
-- Tempo Up/Down
-- Rotor Fast/Slow
-- Volume Up/DOwn
+The Encoder switch is coded to cycle through the following functions when pressed. The rotary encode is used to change the values for the selected function.
+- Rotor Fast/Slow (blue) - default
+- Tempo Up/Down (yellow)
+- Volume Up/DOwn (purple)
+Note:
+- The colors mentioned show up on the Variation key. When you press Start/Stop, the EVM will start playing and the Variation button turns yellow to indicate that it is in Tempo adjustment mode. The Tempo and Volume modes once activated/pressed is timed to return to the default Rotor Fast/Slow after 60 seconds of no adjustments.
+- For Volume to work, you must change the EVM configuration to listen on MIDI channel 16. You can do so by going to the MIDI configuration screen, and select the received (RX) option, and then set Global to channel 16. The Controller encder in Volume mode or an attached MIDI device that sends MIDI CC Expression over Global channel 16 will adjust the volume of all channels in the EVM - the same as Master Volume.
 
-See Ketron website for more details about the EVM: https://shop.ketron.it/
-- Ketron EVM Midi Implementation: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
-
-Please see the source code for additional EVM functionalities and SysEx options that can be loaded to Macropad buttons.
+### Connecting the EVM Macropad Controller to your EVM Module: 
+- The Ketron EVM expects all attached devices to be powered up before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup.
+- The Macropad only has one USB port that is used to connect to the EVM, and as a result of the EVM startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM.
 
 ### Loading the customized EVM Controller code into the Macropad:
 See the Adafruit learning website for detailed instructors on how to
@@ -59,10 +61,6 @@ See the Adafruit learning website for detailed instructors on how to
 
 ### Testing the EVM Macropad Controller:
 Before connecting to the EVM moodule, you may want to download and install MidiView (https://hautetechnique.com/midi/midiview/). Midi is useful to inspect and validate the output from any MIDI controller. In this case you should see the controller output the SysEx messages associated with keys or the rotary encoder.
-  
-### Connecting the EVM Macropad Controller to your EVM Module: 
-- The Ketron EVM expects all attached devices to be powered up before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup.
-- The Macropad only has one USB port that is used to connect to the EVM, and as a result of the startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1)
 
 ### Customizing the EVM Cntroller button SysEx messages:
 Keys are configured by updating the provided keysconfig.txt file. Modifying the mappings requires you to lookup the exact text for the required SysEWx MIDI message from either the Tabs (pedal_midis) or Pedal (tab_midis) lookup tables in the Ketron MIDI documentation, and copy it onto one of the keys of the keys. See the config file for the current configuration. Please be careful with the configuration. It is validating and if an error is enountered during startup, all keys will turn red. The unit continues to function though based on the coded defaults. It is preferred that you keep with the Pedal messages. There are many more Tab messages, and for instance Value Up/Down is very useful, but without context it results in unexpected behaviors in the EVM. Carefully test if you pick a value from Tabs other than VARATION. 
@@ -75,7 +73,7 @@ Note: The rotary encoder SysEx output for is fixed to tempo up/down,  rotary fas
   - If you are going to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only.
   - If you have a need to tinker with the code, and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
 
-My setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the out of the box Macropad RP2040:
+Setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the out of the box Macropad RP2040:
 
 ![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
 
