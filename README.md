@@ -14,9 +14,9 @@ The EVM Pad controller embedded in a case with low profile key switches and LED 
 
 Why use the Macropad RP2040 to control the Ketron: The Macropad has USB HID keyboard drivers - just like the countless keypads you fill find on Amazon. However, these devices and even some dedicated MIDI controllers do not support sending MIDI SysEx messages. Ketron exposes a hardware MIDI pedal interface on the EVM, but also has generously provided a MIDI over USB implmenetation. This controller is coded to send MIDI CC and SysEX messages over USB using the Adafruit Circuit Python library.
 
-### Macropad Controller Button support:
+### Macropad Controller Button:
 
-The USB based MIDI Controller supports the most often used Arranger functions via SysEx messages as an alternative to the Ketron hardware Pedal device. Button assignmeents can be changed by modifying the values in a config file saved on the controller's USB drive.
+The USB based MIDI Controller supports the most often used Arranger functions via SysEx messages. Button assignmeents can be changed by modifying the values in a config file saved on the controller's USB drive.
 
 The controller is currently configured to the following EVM SysEx messages:
 
@@ -39,17 +39,19 @@ Row 3:
 - Start/End (red)
 
 ### Macropad Controller Encoder support:
+
 The Encoder switch is coded to cycle through the following functions when pressed. The rotary encode is used to change the values for the selected function.
 - Rotor Fast/Slow (blue) - default
 - Tempo Up/Down (yellow)
-- Volume Up/DOwn (purple)
-Note:
-- The colors mentioned show up on the Variation key. When you press Start/Stop, the EVM will start playing and the Variation button turns yellow to indicate that it is in Tempo adjustment mode. The Tempo and Volume modes once activated/pressed is timed to return to the default Rotor Fast/Slow after 60 seconds of no adjustments.
-- For Volume to work, you must change the EVM configuration to listen on MIDI channel 16. You can do so by going to the MIDI configuration screen, and select the received (RX) option, and then set Global to channel 16. The Controller encder in Volume mode or an attached MIDI device that sends MIDI CC Expression over Global channel 16 will adjust the volume of all channels in the EVM - the same as Master Volume.
+- Volume Up/Down (purple)
 
-### Connecting the EVM Macropad Controller to your EVM Module: 
-- The Ketron EVM expects all attached devices to be powered up before you start it up. It will not detect any devices on the USB or MIDI ports that is not switched on, or added after EVM startup.
-- The Macropad only has one USB port that is used to connect to the EVM, and as a result of the EVM startup connect requirement we have to power it via a USB hub with external power. This hub is an example of what works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM.
+Notes:
+- The colors mentioned show on the Variation key. When you press Start/Stop, the EVM will start playing and the Variation button turns yellow to indicate that it is in Tempo adjustment mode. The Tempo and Volume modes once activated or pressed is timed to return to the default Rotor Fast/Slow after 60 seconds of no adjustments.
+- For Volume to work, you must change the EVM configuration to listen on MIDI channel 16. You can do so by navigating to the EVM MIDI configuration screen, select the receive (RX) option, and then set Global to channel 16. The Controller encoder in Volume mode sends MIDI CC Expression to EVM RX Global channel 16 adjusting the volume of all channels in the EVM - acting similar to the EVM Master Volume knob. Also note that an attached MIDI keyboard/organ can be configured to send expression pedal messages to the EVM synchronizing volume between the devices in the same manner. 
+
+### Connecting the EVM Macropad Controller to your EVM Module:
+- The Ketron EVM expects all attached MIDI devices to be powered up before you start it up. It will not detect devices on the USB or MIDI ports that is not switched on or added after EVM power up.
+- The Macropad has a single USB port that is used to connect to the EVM, and as a result of the EVM  power up connect requirement, we have to power it via a USB hub that provides external power. This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM.
 
 ### Loading the customized EVM Controller code into the Macropad:
 See the Adafruit learning website for detailed instructors on how to
