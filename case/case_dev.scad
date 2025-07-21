@@ -4,11 +4,19 @@
 // Author: Generated for CircuitPython EVM Controller project
 // License: MIT
 
+// The bottom case along with the filler layer and cover OpenSCAD models provivided
+// wraps the Adafruit MacroPad RP2040 in a tightfitting case. The case has a USB port
+// the reset button opening, as well as 4 mounting holes to fasten the PCD to the case.
+
+// NOTE: This Macropad 3d case is the same as the normal case, except for a longer port
+// on the top left to accomodate a wider port required to connect a Stemma QT connector
+// for a I2C device for development and testing
+
 // =============================================================================
-// PARAMETERS - Match your top cover dimensions
+// PARAMETERS
 // =============================================================================
 
-// RP2040 PCB parameters
+// Adafruit Macropad RP2040 PCB parameters
 pcb_length = 105;          // RP2040 PCB length (mm)
 pcb_width = 60;            // RP2040 PCB width (mm)
 pcb_thickness = 1.6;       // Standard PCB thickness (mm)
@@ -54,6 +62,9 @@ standoff_hole_diameter = 2.5; // Hole diameter in standoff for screw (mm)
 clearance = 0.2;           // General clearance (mm)
 layer_height = 0.2;        // Your 3D printer layer height (mm)
 
+// Catching indent for Cover support lip
+cover_lip_indent = [10, 2.5, 2];
+
 
 // =============================================================================
 // MAIN OBJECT
@@ -74,12 +85,8 @@ difference() {
     // Remove USB port hole
     usb_port_hole();
     
-    // Do one of the following:
-    // 1. Remove Reset port hole
-    //reset_port_hole();
-
-    // 2. Remove larger QWIC port hole
-    qwiic_port_hole();
+    // Remove Reset port hole
+    reset_port_hole();
 
     // Remove PCB mounting holes
     pcb_mounting_holes();
@@ -233,7 +240,7 @@ module usb_port_hole() {
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5.5
     ]) {
         rotate([0, 90, 0]) {
-            // Rounded rectangles for USB port using cylinders
+            // Rounded rectangle for USB port
             hull() {
                 translate([-(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
                     cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
@@ -250,48 +257,32 @@ module usb_port_hole() {
         }
     }
 }
-
 
 // Create Reset port hole
 module reset_port_hole() {
     // Position Reset hole on the side wall
     translate([
-        -usb_position_y + (pcb_length/2 - 22), 
+        -usb_position_y + (pcb_length/2 - 23), 
         (case_width/2 + usb_offset_from_edge - 1), 
-        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
+        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 6
     ]) {
         rotate([0, 90, 0]) {
-            // Rounded rectangles for Reset port using cylinders
+            // Rounded rectangle for Reset port
             hull() {
                 translate([-(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                    cylinder(h = wall_thickness + 14, r = usb_corner_radius, $fn = 16);
                 
                 translate([+(usb_height/2 - usb_corner_radius), -(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                    cylinder(h = wall_thickness + 14, r = usb_corner_radius, $fn = 16);
                 
                 translate([+(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                    cylinder(h = wall_thickness + 14, r = usb_corner_radius, $fn = 16);
                 
                 translate([-(usb_height/2 - usb_corner_radius), +(usb_width/2 - usb_corner_radius), 0])
-                    cylinder(h = wall_thickness + 2, r = usb_corner_radius, $fn = 16);
+                    cylinder(h = wall_thickness + 14, r = usb_corner_radius, $fn = 16);
             }
         }
     }
-}
-
-// Add space for QWIC adapter to be added to the board
-module qwiic_port_hole() {
-    
-    //qwiic dimensions = 6 x 4 x 4mm
-    
-    reset_width = 12;
-    reset_height = 5;
-    pcb_height = bottom_thickness + standoff_height;
-    reset_offset_z = pcb_height + pcb_thickness / 2 - reset_height;
-        
-    color("blue")
-        translate ([case_length/2 - 24, case_width/2 - 3, reset_offset_z])
-            cube(size = [reset_width, 4, reset_height]);
 }
 
 // Create PCB mounting holes
@@ -387,7 +378,7 @@ module pcb_reference() {
         color("red") {
             for (pos = mount_hole_positions) {
                 translate([pos[0], pos[1], 0]) {
-                    cylinder(h = bottom_thickness, d = 3.2, $fn = 16);
+                    cylinder(h = pcb_thickness, d = 3.2, $fn = 16);
                 }
             }
         }
