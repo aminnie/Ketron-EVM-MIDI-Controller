@@ -58,10 +58,10 @@ VARIATION_KEY = 0
 class EVMConfig:
     def __init__(self):
         #self.display_banner =     "     Ketron EVM      "
-        #self.display_sub_banner = "Arranger Controller "
+        #self.display_sub_banner = " Arranger Controller "
         #self.version = "1.1"
         self.display_banner =     "    AJAMSONIC HS13   "
-        self.display_sub_banner = "Pad Controller   "
+        self.display_sub_banner = "    Pad Controller   "
         self.version = "5.1"
 
         # USB port on the left side of the MacroPad
