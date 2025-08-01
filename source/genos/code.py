@@ -527,12 +527,11 @@ class StateManager:
             self.encoder_mode = EncoderMode.TEMPO
             return "timeout_volume"
 
-        # Revert value to rotor after timeout
-        if (self.encoder_mode == EncoderMode.VALUE and
-            self.value_start_time != 0 and
-            current_time - self.value_start_time > self.config.value_timer):
-            self.encoder_mode = EncoderMode.TEMPO
-            return "timeout_value"
+        # Clear version value after timeout
+        if (self.version_start_time != 0 and
+            current_time - self.version_start_time > self.config.version_timer):
+            self.version_start_time = 0
+            return "timeout_version"
 
         # Check LED timeout
         if (self.led_start_time != 0 and
