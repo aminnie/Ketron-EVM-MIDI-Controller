@@ -61,7 +61,7 @@ class EVMConfig:
     def __init__(self):
         self.display_banner =     "   YAMAHA GENOS     "
         self.display_sub_banner = "Arranger Controller "
-        self.version = "0.9"
+        self.version = "1.0"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -135,18 +135,18 @@ class MIDIHandler:
         total_tempo = int(60000000 / tempo)
         
         # Extract 7-bit chunks in Yamaha order (T4, T3, T2, T1)
-        x_tem4 = (total_tempo >> 21) & 127  # 21 bit shift
-        x_tem3 = (total_tempo >> 14) & 127  # 14 bit shift  
-        x_tem2 = (total_tempo >> 7) & 127   # 7 bit shift
-        x_tem1 = total_tempo & 127          # 0 bit shift
+        x_tempo4 = (total_tempo >> 21) & 127  # 21 bit shift
+        x_tempo3 = (total_tempo >> 14) & 127  # 14 bit shift  
+        x_tempo2 = (total_tempo >> 7) & 127   # 7 bit shift
+        x_tempo1 = total_tempo & 127          # 0 bit shift
         
         # Build SysEx message - minus start and end which is added by Adafruit MIDI library
         sysex_parts = bytearray([
             0x01,     # Sub-status
-            x_tem4,   # Tempo byte 4
-            x_tem3,   # Tempo byte 3
-            x_tem2,   # Tempo byte 2
-            x_tem1    # Tempo byte 1
+            x_tempo4,   # Tempo byte 4
+            x_tempo3,   # Tempo byte 3
+            x_tempo2,   # Tempo byte 2
+            x_tempo1    # Tempo byte 1
         ])
         
         return sysex_parts
@@ -160,8 +160,8 @@ class MIDIHandler:
         # Tempo max = 127 and min = 0 in increments of 1 (or more) to manage encoder turns
         if direction == 1:
             self.cur_tempo = self.cur_tempo + 1
-            if self.cur_tempo > 127: 
-                self.cur_tempo = 127
+            if self.cur_tempo > 500: 
+                self.cur_tempo = 500
         else:
             self.cur_tempo = self.cur_tempo - 1
             if self.cur_tempo < 0: 
@@ -488,7 +488,6 @@ class StateManager:
         self.tempo_start_time = 0
         self.rotor_start_time = 0
         self.volume_start_time = 0
-        self.value_start_time = 0
         self.version_start_time = 0
         self.led_start_time = 0
 
@@ -535,12 +534,6 @@ class StateManager:
             self.encoder_mode = EncoderMode.TEMPO
             return "timeout_value"
 
-        # Clear version value after timeout
-        if (self.version_start_time != 0 and
-            current_time - self.version_start_time > self.config.version_timer):
-            self.version_start_time = 0
-            return "timeout_version"
-
         # Check LED timeout
         if (self.led_start_time != 0 and
             current_time - self.led_start_time > self.config.key_bright_timer):
@@ -569,7 +562,7 @@ class EVMController:
         self.config_handler = ConfigFileHandler(self.key_cache, self.config)
 
         # Load configuration: 
-        # To do: Skip in GENOS for now
+        # To do: Skip in GENOS for now and adjust when needed
         #config_loaded = self.config_handler.load_config()
 
         #if not config_loaded:
@@ -660,9 +653,6 @@ class EVMController:
         # elif self.state.encoder_mode == EncoderMode.VOLUME:
         #     self._process_volume(direction)
         #     self.state.volume_start_time = current_time
-        # elif self.state.encoder_mode == EncoderMode.VALUE:
-        #     self._process_value(direction)
-        #     self.state.value_start_time = current_time
 
     def _process_rotor(self, direction):
         """Process rotor fast/slow commands"""
@@ -698,19 +688,6 @@ class EVMController:
 
         self.midi_handler.send_master_volume(direction)
 
-    def _process_value(self, direction):
-        """Process value (DIAL) up/down commands"""
-        sign = "+" if self.state.encoder_sign else ""
-        if direction == 1:
-            midi_value = self.key_cache.tempo_midis["DIAL_UP"]
-            self.display.update_text(3, "KNOB: Dial Up{}".format(sign))
-        else:
-            sign = "-" if self.state.encoder_sign else ""
-            midi_value = self.key_cache.tempo_midis["DIAL_DOWN"]
-            self.display.update_text(3, "KNOB: Dial Down{}".format(sign))
-
-        self.midi_handler.send_sec_sysex(midi_value)
-
     def _handle_encoder_switch(self):        
         """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled). 
            For now only Tempo supported.
@@ -732,10 +709,6 @@ class EVMController:
         #     self.display.update_text(3, "KNOB: -")
         #     self.display.update_text(6, "KNOB MODE: *Volume")
         #     self.state.volume_start_time = current_time
-        # elif self.state.encoder_mode == EncoderMode.VALUE:
-        #     self.display.update_text(3, "KNOB: -")
-        #     self.display.update_text(6, "KNOB MODE: *Dial")
-        #     self.state.value_start_time = current_time
 
         self._preset_pixels()
 
