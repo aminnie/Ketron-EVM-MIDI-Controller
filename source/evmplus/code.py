@@ -93,6 +93,7 @@ class EVMConfig:
 
     def get_key(self, key):
         """Safe key mapping with bounds checking"""
+        
         if key < 0 or key > 11:
             print("Invalid key map request: {}".format(key))
             return 0
@@ -114,6 +115,7 @@ class MIDIHandler:
 
     def send_pedal_sysex(self, midi_value):
         """Send SysEx for Pedal commands"""
+        
         try:
             # Send ON followed by OFF Message
             if midi_value < 128:
@@ -156,8 +158,8 @@ class MIDIHandler:
             print("Error sending tab SysEx: {}".format(e))
             return False
 
-    def send_volume(self, updown):
-        """Send volume control via CC11"""
+    def send_master_volume(self, updown):
+        """Send volume via CC11"""
         try:
             # Change volume in 8-unit increments
             if updown == -1:
@@ -170,6 +172,14 @@ class MIDIHandler:
         except Exception as e:
             print("Error sending volume: {}".format(e))
             return False
+
+    def send_quad_volume(self, midi_channel, volume):
+        """Send volume CC for Quad Encoder configured channels"""
+        try:
+            self.midi.send(ControlChange(11, volume), midi_channel)
+        except Exception as e:
+            print("Error sending volume: {}".format(e))
+            return False        
 
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
@@ -295,6 +305,7 @@ class KeyLookupCache:
 
     def _build_cache(self):
         """Build lookup cache at startup"""
+        
         for i in range(12):
             key_id = self.config.get_key(i)
             mapped_key = self.macropad_key_map[key_id]
@@ -333,6 +344,7 @@ class ConfigFileHandler:
 
     def safe_file_read(self, filename):
         """Safely read file with error handling"""
+        
         try:
             with open(filename, "r") as f:
                 return f.readlines()
@@ -342,6 +354,7 @@ class ConfigFileHandler:
 
     def parse_config_line(self, line):
         """Parse a single config line with validation"""
+        
         try:
             line = line.strip()
             if line.startswith('#') or not line:
@@ -370,6 +383,7 @@ class ConfigFileHandler:
 
     def validate_midi_string(self, midi_type, command):
         """Validate MIDI command against known commands"""
+        
         if midi_type == MIDIType.PEDAL:
             return command in self.key_cache.pedal_midis
         else:
@@ -377,6 +391,7 @@ class ConfigFileHandler:
 
     def load_config(self):
         """Load and validate configuration file"""
+        
         key_index = 0
         config_errors = []
 
@@ -438,6 +453,7 @@ class DisplayManager:
 
     def _init_display(self):
         """Initialize display layout"""
+        
         main_group = displayio.Group()
         self.macropad.display.root_group = main_group
 
@@ -468,6 +484,7 @@ class DisplayManager:
 
     def show_startup_info(self):
         """Display startup information"""
+        
         self.labels[3].text = self.config.display_sub_banner
         self.labels[6].text = "KNOB MODE: Rotor"
         # self.labels[9].text = "Version: {}".format(self.config.version)
@@ -475,6 +492,7 @@ class DisplayManager:
 
     def update_text(self, index, text):
         """Update label text safely"""
+        
         if 0 <= index < len(self.labels):
             self.labels[index].text = text
 
@@ -499,9 +517,21 @@ class StateManager:
 
         # LED state
         self.lit_keys = [False] * 12
+        
+        # Tracks if I2C devices is attached.
+        self.is_quadencoder = False
+        
+        self.quad_volumes = [0, 0, 0, 0]
+
+        self.chan_volume = 15
+        self.chan_lower = 4
+        self.chan_upper1 = 5
+        self.chan_upper2 = 6
+        self.chan_drawbar = 7
 
     def update_encoder_mode(self, new_mode):
         """Update encoder mode with timed reset"""
+        
         self.encoder_mode = new_mode
         current_time = time.time()
 
@@ -583,16 +613,18 @@ class EVMController:
         self._preset_pixels()
 
         # Initialize the Adafruit Quad Encoder
-        self._init_quadencoder()
-        print(self.quad_encoders)
-        print(self.quad_switches)
-        print(self.quad_last_positions)
-        print(self.quad_pixels)
+        self.state.is_quadencoder = self._init_quadencoder()
+        #if self.state.is_quadencoder:
+        #    print(self.quad_encoders)
+        #    print(self.quad_switches)
+        #    print(self.quad_last_positions)
+        #    print(self.quad_pixels)
 
         print("Pad Controller Ready")
 
     def _init_midi(self):
         """Initialize MIDI connections"""
+        
         print("Preparing Macropad Midi")
         print(usb_midi.ports)
 
@@ -605,37 +637,41 @@ class EVMController:
 
     def _init_macropad(self):
         """Initialize MacroPad hardware"""
+        
         print("Preparing MacroPad Display")
         self.macropad = MacroPad(rotation=0)
         self.state.encoder_position = self.macropad.encoder
 
     def _init_quadencoder(self):
         """Initialize the Adafruit Quad Encoder"""
-        print("Preparing the Quad Encoder")
+        try:
+            # For boards/chips that don't handle clock-stretching well, try running I2C at 50KHz
+            # import busio
+            # i2c = busio.I2C(board.SCL, board.SDA, frequency=50000)
+            # For using the built-in STEMMA QT connector on a microcontroller
+            i2c = board.STEMMA_I2C()
+            seesaw = adafruit_seesaw.seesaw.Seesaw(i2c, 0x49)
 
-        # For boards/chips that don't handle clock-stretching well, try running I2C at 50KHz
-        # import busio
-        # i2c = busio.I2C(board.SCL, board.SDA, frequency=50000)
-        # For using the built-in STEMMA QT connector on a microcontroller
-        i2c = board.STEMMA_I2C()
-        seesaw = adafruit_seesaw.seesaw.Seesaw(i2c, 0x49)
+            self.quad_encoders = [adafruit_seesaw.rotaryio.IncrementalEncoder(seesaw, n) for n in range(4)]
+            self.quad_switches = [adafruit_seesaw.digitalio.DigitalIO(seesaw, pin) for pin in (12, 14, 17, 9)]
 
-        self.quad_encoders = [adafruit_seesaw.rotaryio.IncrementalEncoder(seesaw, n) for n in range(4)]
-        self.quad_switches = [adafruit_seesaw.digitalio.DigitalIO(seesaw, pin) for pin in (12, 14, 17, 9)]
+            for switch in self.quad_switches:
+                #switch.switch_to_input(adafruit_seesaw.digitalio.Pull.UP)  # input & pullup! Adafruit bug in sample code?
+                switch.switch_to_input(pull=digitalio.Pull.UP)
 
-        for switch in self.quad_switches:
-            #switch.switch_to_input(adafruit_seesaw.digitalio.Pull.UP)  # input & pullup! Adafruit bug in sample code?
-            switch.switch_to_input(pull=digitalio.Pull.UP)
+            # four neopixels per PCB
+            self.quad_pixels = adafruit_seesaw.neopixel.NeoPixel(seesaw, 18, 4)
+            self.quad_pixels.brightness = 0.5
 
-        # four neopixels per PCB
-        self.quad_pixels = adafruit_seesaw.neopixel.NeoPixel(seesaw, 18, 4)
-        self.quad_pixels.brightness = 0.5
+            self.quad_last_positions = [-1, -1, -1, -1]
+            self.quad_colors = [0, 0, 0, 0]  # start at red
 
-        self.quad_last_positions = [-1, -1, -1, -1]
-        self.quad_colors = [0, 0, 0, 0]  # start at red
-
-        print("Quad Encoders configured")
-
+            print("Quad Encoders configured")
+            return True
+            
+        except Exception as e:
+            print("Error: Quad Encoder: {}".format(e))
+            return False
 
     def _preset_pixels(self):
         """Set pixel colors based on configuration"""
@@ -693,7 +729,7 @@ class EVMController:
             self._process_tempo(direction)
             self.state.tempo_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VOLUME:
-            self._process_volume(direction)
+            self._process_master_volume(direction)
             self.state.volume_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VALUE:
             self._process_value(direction)
@@ -725,7 +761,7 @@ class EVMController:
 
         self.midi_handler.send_pedal_sysex(midi_value)
 
-    def _process_volume(self, direction):
+    def _process_master_volume(self, direction):
         """Process volume up/down commands"""
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
@@ -733,7 +769,26 @@ class EVMController:
         else:
             self.display.update_text(3, "KNOB: Volume Down{}".format(sign))
 
-        self.midi_handler.send_volume(direction)
+        self.midi_handler.send_master_volume(direction)
+
+    def _process_quad_volume(self, encoder_number, volume):
+        """Process Quad Encoder Volumes"""
+        # Lookup channel for the quad encoder number before sending
+        midi_channel = 0
+        if encoder_number == 0:
+            midi_channel = self.state.chan_lower
+            self.display.update_text(9, f"QUAD Lower Vol:{volume}")
+        elif encoder_number == 1:
+            midi_channel = self.state.chan_upper1
+            self.display.update_text(9, f"QUAD Upper1 Vol:{volume}")
+        elif encoder_number == 2:
+            midi_channel = self.state.chan_upper2
+            self.display.update_text(9, f"QUAD Upper2 Vol:{volume}")
+        elif encoder_number == 3:            
+            midi_channel = self.state.chan_drawbar
+            self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
+
+        self.midi_handler.send_quad_volume(midi_channel, volume)
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
@@ -748,8 +803,9 @@ class EVMController:
 
         self.midi_handler.send_tab_sysex(midi_value)
 
-    def _handle_encoder_switch(self):
+    def _handle_encoder_switch(self):        
         """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""
+        
         self.state.encoder_mode = self.state.encoder_mode + 1
         if self.state.encoder_mode > 2: self.state.encoder_mode = 0
         current_time = time.time()
@@ -774,21 +830,34 @@ class EVMController:
 
     def _handle_quadencoder(self):
         """Handle quad encoder rotary encoders and switchs press."""
-
+        
         # Negate the position to make clockwise rotation positive
         positions = [encoder.position for encoder in self.quad_encoders]
-        # print(positions)
 
         for n, rotary_pos in enumerate(positions):
             if rotary_pos != self.quad_last_positions[n]:
-                if self.quad_switches[n].value:  # Change the LED color if switch is not pressed
+                
+                # If switch not pressed, update volume for encoders 
+                if self.quad_switches[n].value:  
+                    # Update channel volume with new encoder position 
+                    if rotary_pos > self.quad_last_positions[n]: 
+                        self.state.quad_volumes[n] += 4        # Advance forward
+                        if self.state.quad_volumes[n] >= 127: self.state.quad_volumes[n] = 127
+                        self._process_quad_volume(n, self.state.quad_volumes[n])
+                    elif rotary_pos < self.quad_last_positions[n]:
+                        self.state.quad_volumes[n] -= 4        # Advance backward
+                        if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
+                        self._process_quad_volume(n, self.state.quad_volumes[n])
+                    #print(f"Encoder {n} value {self.state.quad_volumes[n]}")
+                                        
+                    # Change the LED colors
                     if rotary_pos > self.quad_last_positions[n]:  # Advance forward through the colorwheel.
                         self.quad_colors[n] += 8
                     else:
                         self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
                     self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
+                                
                 # Set last position to current position after evaluating
-                print(f"Rotary #{n}: {rotary_pos}")
                 self.quad_last_positions[n] = rotary_pos
 
             # if switch is pressed, light up white, otherwise use the stored color
@@ -834,10 +903,11 @@ class EVMController:
                 # Handle encoder switch
                 self.macropad.encoder_switch_debounced.update()
                 if self.macropad.encoder_switch_debounced.pressed:
-                    self._handle_encoder_switch
+                    self._handle_encoder_switch()
 
                 # Handle quad encoder board
-                self._handle_quadencoder()
+                if self.state.is_quadencoder:
+                    self._handle_quadencoder()
 
                 # Update display and handle timeouts
                 self._update_display()
