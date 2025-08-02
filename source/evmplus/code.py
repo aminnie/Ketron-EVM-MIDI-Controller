@@ -1,5 +1,5 @@
 
-# Ketron EVM Button Controller
+# Ketron EVM Button Controller with Quad Encoder
 
 import board, displayio, digitalio
 import terminalio
@@ -64,12 +64,12 @@ VARIATION_KEY = 0
 # --- Configuration Class ---
 class EVMConfig:
     def __init__(self):
-        #self.display_banner =     "     Ketron EVM      "
-        #self.display_sub_banner = "Arranger Controller "
-        #self.version = "1.1"
-        self.display_banner =     "    AJAMSONIC HS13   "
-        self.display_sub_banner = "Pad Controller   "
-        self.version = "5.1"
+        self.display_banner =     "     Ketron EVM      "
+        self.display_sub_banner = "Arranger Controller "
+        self.version = "1.1"
+        #self.display_banner =     "    AJAMSONIC HS13   "
+        #self.display_sub_banner = "Pad Controller   "
+        #self.version = "5.1"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -665,6 +665,11 @@ class EVMController:
 
             self.quad_last_positions = [-1, -1, -1, -1]
             self.quad_colors = [0, 0, 0, 0]  # start at red
+            
+            # Re-initialize the encoder last position tracked by reading the current state 
+            positions = [encoder.position for encoder in self.quad_encoders]
+            for n, rotary_pos in enumerate(positions):
+                self.quad_last_positions[n] = rotary_pos
 
             print("Quad Encoders configured")
             return True
