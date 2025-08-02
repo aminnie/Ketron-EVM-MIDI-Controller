@@ -664,7 +664,7 @@ class EVMController:
             self.quad_pixels.brightness = 0.5
 
             self.quad_last_positions = [-1, -1, -1, -1]
-            self.quad_colors = [0, 0, 0, 0]  # start at red
+            self.quad_colors = [0, 0, 0, 0]  # Start at red (muted)
             
             # Re-initialize the encoder last position tracked by reading the current state 
             positions = [encoder.position for encoder in self.quad_encoders]
