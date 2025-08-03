@@ -88,7 +88,7 @@ Original Adafruit Macropad RP2040:
 
 ![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
-For more information, support, or a completed unit please email me at a_minnie@hotmail.com.
+For more information, support, or a completed unit please email me at a_minnie@hotmail.com or order directly from: https://www.tindie.com/products/edit/arranger-controller-for-ketron-event-evm/
 
 
 
