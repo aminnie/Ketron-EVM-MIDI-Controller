@@ -666,7 +666,8 @@ class EVMController:
             self.quad_last_positions = [-1, -1, -1, -1]
             self.quad_colors = [0, 0, 0, 0]  # Start at red (muted)
             
-            # Re-initialize the encoder last position tracked by reading the current state 
+            # Re-initialize the encoder last position tracked by reading the current state
+            # No MIDI message sent since we do not know if the EVM is online yet
             positions = [encoder.position for encoder in self.quad_encoders]
             for n, rotary_pos in enumerate(positions):
                 self.quad_last_positions[n] = rotary_pos

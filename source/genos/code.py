@@ -35,7 +35,7 @@ class MIDIStatus:
 
 class Colors:
     WHITE = 0x606060
-    BLUE = 0x000020
+    BLUE = 0x33717a # 0x66D3FA
     GREEN = 0x002000
     RED = 0x200000
     ORANGE = 0x701E02
