@@ -12,6 +12,8 @@
 // PARAMETERS
 // =============================================================================
 
+logotext = "AJAMSONIC HS13";
+
 // Adafruit Macropad RP2040 PCB parameters
 pcb_length = 105;          // RP2040 PCB length (mm)
 pcb_width = 60;            // RP2040 PCB width (mm)
@@ -71,7 +73,7 @@ difference() {
         // Main case body
         case_body();
 
-        ajam_text();
+        logo_text();
         
         // PCB mounting standoffs
         pcb_standoffs();
@@ -194,7 +196,7 @@ module case_body() {
 }
 
 // Create AJAMSONIC lettering on the right side
-module ajam_text() {
+module logo_text() {
     wall_offset = (pcb_width + (wall_thickness * 2)) / 2;
     
     translate([0, -wall_offset + 0.5, 7]) // y = -31.5
@@ -202,8 +204,8 @@ module ajam_text() {
         cube([50, 10, 1], center = true);
         font = "DejaVu Sans:style=Bold";
         letter_size = 4;
-        string = "AJAMSONIC HS13";
-        linear_extrude(height = 2) {
+        string = logotext;
+        linear_extrude(height = 1) {
           text(string, size = letter_size, font = font, halign = "center", valign = "center");
         }
     }

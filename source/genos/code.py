@@ -93,7 +93,7 @@ class MIDIHandler:
 
         # Pre-allocate bytearrays for memory efficiency
         self.section_sysex = bytearray([0x7E, 0x00, 0x00, 0x00])
-        self.startstop_sysex = bytearray([0x00, 0x00])        
+        self.startstop_sysex = bytearray([0x00, 0x00])
         self.tempo_sysex = bytearray([0x7E, 0x01, 0x00, 0x00, 0x00, 0x00])    # Tempo 1 to 4 up to value of 127
 
         self.cur_volume = 100
@@ -133,13 +133,13 @@ class MIDIHandler:
     def tempo_genos(self, tempo):
         """Calculate tempo PSR or Genos (Yamaha SysEx format)"""
         total_tempo = int(60000000 / tempo)
-        
+
         # Extract 7-bit chunks in Yamaha order (T4, T3, T2, T1)
         x_tempo4 = (total_tempo >> 21) & 127  # 21 bit shift
-        x_tempo3 = (total_tempo >> 14) & 127  # 14 bit shift  
+        x_tempo3 = (total_tempo >> 14) & 127  # 14 bit shift
         x_tempo2 = (total_tempo >> 7) & 127   # 7 bit shift
         x_tempo1 = total_tempo & 127          # 0 bit shift
-        
+
         # Build SysEx message - minus start and end which is added by Adafruit MIDI library
         sysex_parts = bytearray([
             0x01,     # Sub-status
@@ -148,7 +148,7 @@ class MIDIHandler:
             x_tempo2,   # Tempo byte 2
             x_tempo1    # Tempo byte 1
         ])
-        
+
         return sysex_parts
 
 
@@ -160,11 +160,11 @@ class MIDIHandler:
         # Tempo max = 127 and min = 0 in increments of 1 (or more) to manage encoder turns
         if direction == 1:
             self.cur_tempo = self.cur_tempo + 1
-            if self.cur_tempo > 500: 
+            if self.cur_tempo > 500:
                 self.cur_tempo = 500
         else:
             self.cur_tempo = self.cur_tempo - 1
-            if self.cur_tempo < 0: 
+            if self.cur_tempo < 0:
                 self.cur_tempo = 0
 
         try:
@@ -172,7 +172,7 @@ class MIDIHandler:
             sysex_message = SystemExclusive(self.manufacturer_id, self.tempo_sysex)
             self.midi.send(sysex_message)
             return True
-    
+
         except Exception as e:
             print("Error sending tempo SysEx: {}".format(e))
             return False
@@ -182,14 +182,16 @@ class MIDIHandler:
             Start: F0 04 43 60 7A F7
             Stop:  F0 04 43 60 7D F7"""
 
-        # Override the section messages manufacturer id. 
+        # Override the section messages manufacturer id.
         # To do: Verify that this id is correct
+        # Leigh: Please note, I swopped the 0x43 and 0x04 below as Yamaha's Manufacturer ID in the documentation is 0x43.
+        # manufacturer_id = bytearray([0x04, 0x43])  # Yamaha manufacturer ID and Device ID
         manufacturer_id = bytearray([0x43, 0x04])  # Yamaha manufacturer ID and Device ID
 
         midi_byte = 0x7A
         if midi_value == True:
             midi_byte = 0x7D
-        
+
         try:
             # Send ON followed by OFF Message
             self.startstop_sysex[0] = 0x60
@@ -201,7 +203,7 @@ class MIDIHandler:
         except Exception as e:
             print("Error sending start/stop SysEx: {}".format(e))
             return False
-               
+
     def send_master_volume(self, updown):
         """Send Master volume control via CC11"""
         try:
@@ -240,15 +242,15 @@ class KeyLookupCache:
         # Initialize MacroPad key & color mappings to default MIDI message values
         # USB drive keysconfig.txt file will override if present. BHowever, not supported for the Genos yet
         self.macropad_key_map = [
-            "0:Ending 1", "0:Main A", "0:Intro 1", 
+            "0:Ending 1", "0:Main A", "0:Intro 1",
             "0:Ending 2", "0:Main B", "0:Intro 2",
-            "0:Ending 3", "0:Main C", "0:Intro 3", 
+            "0:Ending 3", "0:Main C", "0:Intro 3",
             "0:Start/Stop", "0:Main D", "0:Break"
         ]
         self.macropad_color_map = [
-            Colors.ORANGE, Colors.BLUE, Colors.GREEN, 
-            Colors.ORANGE, Colors.BLUE, Colors.GREEN, 
-            Colors.ORANGE, Colors.BLUE, Colors.GREEN, 
+            Colors.ORANGE, Colors.BLUE, Colors.GREEN,
+            Colors.ORANGE, Colors.BLUE, Colors.GREEN,
+            Colors.ORANGE, Colors.BLUE, Colors.GREEN,
             Colors.RED, Colors.BLUE, Colors.ORANGE
         ]
 
@@ -278,7 +280,7 @@ class KeyLookupCache:
             "Ending 2": 0x21,
             "Ending 3": 0x22,
             "Ending 4": 0x23,
-            "Start/Stop" : 0x00     # Special case coded to toggle between to messages 
+            "Start/Stop" : 0x00     # Special case coded to toggle between to messages
         }
 
     def _init_tempo_midis(self):
@@ -560,7 +562,7 @@ class EVMController:
         self.key_cache = KeyLookupCache(self.config)
         self.config_handler = ConfigFileHandler(self.key_cache, self.config)
 
-        # Load configuration: 
+        # Load configuration:
         # To do: Skip in GENOS for now and adjust when needed
         #config_loaded = self.config_handler.load_config()
 
@@ -622,7 +624,7 @@ class EVMController:
         if midi_key == "Start/Stop":
             self.state.startstop = not self.state.startstop
             self.midi_handler.send_startstop_sysex(self.state.startstop)
- 
+
         # To do: rework as no secondary table avilable as on the EVM
         elif lookup_key == MIDIType.PRI:
             self.midi_handler.send_section_sysex(midi_value)
@@ -640,7 +642,7 @@ class EVMController:
         return midi_key
 
     def _handle_encoder_change(self, direction):
-        """Handle encoder rotation"""        
+        """Handle encoder rotation"""
         self.state.encoder_sign = not self.state.encoder_sign
         current_time = time.time()
 
@@ -687,13 +689,13 @@ class EVMController:
 
         self.midi_handler.send_master_volume(direction)
 
-    def _handle_encoder_switch(self):        
-        """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled). 
+    def _handle_encoder_switch(self):
+        """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled).
            For now only Tempo supported.
            To do: Cleanup or add more modes on encoder."""
         no_modes_supported = 0
         self.state.encoder_mode = self.state.encoder_mode + 1
-        if self.state.encoder_mode > no_modes_supported: 
+        if self.state.encoder_mode > no_modes_supported:
             self.state.encoder_mode =  EncoderMode.TEMPO
         current_time = time.time()
 
