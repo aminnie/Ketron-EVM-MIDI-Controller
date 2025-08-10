@@ -1,5 +1,3 @@
-
-
 # Ketron EVM Button Controller
 
 import board, displayio
@@ -18,12 +16,6 @@ from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
 # --- Constants and Enums ---
-class EncoderMode:
-    ROTOR = 0
-    TEMPO = 1
-    VOLUME = 2
-    VALUE = 3
-
 class MIDIType:
     PEDAL = 0
     TAB = 1
@@ -31,6 +23,17 @@ class MIDIType:
 class MIDIStatus:
     OFF = 0x00
     ON = 0x7F
+
+class EncoderMode:
+    ROTOR = 0
+    TEMPO = 1
+    VOLUME = 2
+    VALUE = 3
+
+class ShiftKeyMode:
+    OFF = 0
+    PENDING = 1
+    ACTIVE = 2
 
 class Colors:
     WHITE = 0x606060
@@ -475,6 +478,8 @@ class StateManager:
         self.encoder_position = 0
         self.encoder_sign = False
         self.rotor_flag = 0  # -1=slow, 0=off, 1=fast
+        
+        self.shift_mode = ShiftKeyMode.OFF
 
         # Timing
         self.tempo_start_time = 0
@@ -752,8 +757,26 @@ class EVMController:
                 # Handle key events
                 key_event = self.macropad.keys.events.get()
                 if key_event and key_event.pressed:
-                    self._handle_key_press(key_event.key_number)
+                    
+                    # Check for potential Shift Key operation. If Variation key pressed and held in, then
+                    # shift key is active and no MIDI "VARIATION" send until release
+                    if  key_event.key_number == VARIATION_KEY:
+                        self.state.shift_mode = ShiftKeyMode.PENDING
+                        print("Shift mode: Pending")
+                    else:
+                        if self.state.shift_mode == ShiftKeyMode.PENDING: 
+                            self.state.shift_mode = ShiftKeyMode.ACTIVE                        
+                            print("Shift mode: Active")
+                        self._handle_key_press(key_event.key_number)
 
+                # If Variation key released and still in pending or active mode, send MIDI "VATATION
+                if key_event and key_event.released:
+                    if self.state.shift_mode == ShiftKeyMode.PENDING or self.state.shift_mode == ShiftKeyMode.ACTIVE:
+                        if key_event.key_number == VARIATION_KEY:
+                            self._handle_key_press(key_event.key_number)
+                            self.state.shift_mode = ShiftKeyMode.OFF                        
+                            print("Shift mode: Off")
+                        
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
                     direction = 1 if self.state.encoder_position < self.macropad.encoder else -1
