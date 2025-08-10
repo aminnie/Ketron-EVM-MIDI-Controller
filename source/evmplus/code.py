@@ -1,3 +1,4 @@
+# Write your code here :-)
 
 # Ketron EVM Button Controller with Quad Encoder
 
@@ -523,11 +524,13 @@ class StateManager:
         
         self.quad_volumes = [0, 0, 0, 0]
 
+        # NIDI Channel - 1
+        # To do: Make configurable in config file
         self.chan_volume = 15
-        self.chan_lower = 4
-        self.chan_upper1 = 5
-        self.chan_upper2 = 6
-        self.chan_drawbar = 7
+        self.chan_lower = 2
+        self.chan_upper1 = 3
+        self.chan_upper2 = 3
+        self.chan_drawbar = 3
 
     def update_encoder_mode(self, new_mode):
         """Update encoder mode with timed reset"""
@@ -653,7 +656,7 @@ class EVMController:
             seesaw = adafruit_seesaw.seesaw.Seesaw(i2c, 0x49)
 
             self.quad_encoders = [adafruit_seesaw.rotaryio.IncrementalEncoder(seesaw, n) for n in range(4)]
-            self.quad_switches = [adafruit_seesaw.digitalio.DigitalIO(seesaw, pin) for pin in (12, 14, 17, 9)]
+            self.quad_switches = [adafruit_seesaw.digitalio.DigitalIO(seesaw, pin) for pin in (9, 17, 14, 12)]
 
             for switch in self.quad_switches:
                 #switch.switch_to_input(adafruit_seesaw.digitalio.Pull.UP)  # input & pullup! Adafruit bug in sample code?
@@ -781,18 +784,18 @@ class EVMController:
         """Process Quad Encoder Volumes"""
         # Lookup channel for the quad encoder number before sending
         midi_channel = 0
-        if encoder_number == 0:
-            midi_channel = self.state.chan_lower
-            self.display.update_text(9, f"QUAD Lower Vol:{volume}")
-        elif encoder_number == 1:
+        if encoder_number == 0:            
+            midi_channel = self.state.chan_drawbar
+            self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
+        if encoder_number == 1:
             midi_channel = self.state.chan_upper1
             self.display.update_text(9, f"QUAD Upper1 Vol:{volume}")
         elif encoder_number == 2:
             midi_channel = self.state.chan_upper2
             self.display.update_text(9, f"QUAD Upper2 Vol:{volume}")
-        elif encoder_number == 3:            
-            midi_channel = self.state.chan_drawbar
-            self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
+        elif encoder_number == 3:
+            midi_channel = self.state.chan_lower
+            self.display.update_text(9, f"QUAD Lower Vol:{volume}")
 
         self.midi_handler.send_quad_volume(midi_channel, volume)
 
@@ -847,30 +850,30 @@ class EVMController:
                 if self.quad_switches[n].value:  
                     # Update channel volume with new encoder position 
                     if rotary_pos > self.quad_last_positions[n]: 
-                        self.state.quad_volumes[n] += 4        # Advance forward
+                        self.state.quad_volumes[n] += 8        # Advance forward
                         if self.state.quad_volumes[n] >= 127: self.state.quad_volumes[n] = 127
                         self._process_quad_volume(n, self.state.quad_volumes[n])
                     elif rotary_pos < self.quad_last_positions[n]:
-                        self.state.quad_volumes[n] -= 4        # Advance backward
+                        self.state.quad_volumes[n] -= 8        # Advance backward
                         if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
                         self._process_quad_volume(n, self.state.quad_volumes[n])
                     #print(f"Encoder {n} value {self.state.quad_volumes[n]}")
                                         
                     # Change the LED colors
-                    if rotary_pos > self.quad_last_positions[n]:  # Advance forward through the colorwheel.
-                        self.quad_colors[n] += 8
-                    else:
-                        self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
-                    self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
+                    # if rotary_pos > self.quad_last_positions[n]:  # Advance forward through the colorwheel.
+                    #    self.quad_colors[n] += 8
+                    # else:
+                    #    self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
+                    #self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
                                 
                 # Set last position to current position after evaluating
                 self.quad_last_positions[n] = rotary_pos
 
             # if switch is pressed, light up white, otherwise use the stored color
-            if not self.quad_switches[n].value:
-                self.quad_pixels[n] = 0xFFFFFF
-            else:
-                self.quad_pixels[n] = colorwheel(self.quad_colors[n])
+            #if not self.quad_switches[n].value:
+            #    self.quad_pixels[n] = 0xFFFFFF
+            #else:
+            #    self.quad_pixels[n] = colorwheel(self.quad_colors[n])
 
     def _update_display(self):
         """Update display based on timeouts"""

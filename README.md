@@ -90,7 +90,7 @@ Original Adafruit Macropad RP2040:
 
 Difference between the Adafruit MacroPad standard order and the custom ordered unit: Low profile key switches and custom key caps. A custom 3D printed case enclosure that hides the electronics components.
 
-For more information, support, or a completed unit please email me at a_minnie@hotmail.com or order directly from: https://www.tindie.com/products/edit/arranger-controller-for-ketron-event-evm/
+For more information, support, or a completed unit please contact: a_minnie@hotmail.com
 
 
 
