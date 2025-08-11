@@ -43,6 +43,7 @@ class Colors:
     ORANGE = 0x701E02
     PURPLE = 0x800080
     YELLOW = 0x808000
+    TEAL = 0x004040
 
 # Color mapping dictionary
 COLOR_MAP = {
@@ -52,7 +53,8 @@ COLOR_MAP = {
     'purple': Colors.PURPLE,
     'yellow': Colors.YELLOW,
     'orange': Colors.ORANGE,
-    'white': Colors.WHITE
+    'white': Colors.WHITE,
+    'teal': Colors.TEAL
 }
 
 # Key used to reflect timed Eccoder mode changes on LED
@@ -182,6 +184,7 @@ class KeyLookupCache:
     def __init__(self, config):
         self.config = config
         self.cache = {}
+        self.cache_shift = {}
 
         # Initialize MacroPad key & color mappings to default MIDI message values
         # USB drive keysconfig.txt file will override if present
@@ -194,6 +197,17 @@ class KeyLookupCache:
             Colors.BLUE, Colors.BLUE, Colors.GREEN, Colors.GREEN,
             Colors.BLUE, Colors.GREEN, Colors.ORANGE, Colors.BLUE,
             Colors.GREEN, Colors.RED, Colors.BLUE, Colors.RED
+        ]
+
+        self.macropad_key_map_shift = [
+            "1:VARIATION", "0:Lead Mute", "1:TRANSP_DOWN", "0:HALF BAR",
+            "0:FILL & DRUM IN", "1:TRANSP_UP","0:Tempo Form", "0:Bass & Drum",
+            "1:OCTAVE_UP", "0:Transpose Form", "0:Arr.Off", "1:OCTAVE_DOWN"
+        ]
+        self.macropad_color_map_shift = [
+            Colors.RED, Colors.BLUE, Colors.YELLOW, Colors.PURPLE,
+            Colors.GREEN, Colors.YELLOW, Colors.ORANGE, Colors.GREEN,
+            Colors.TEAL, Colors.PURPLE, Colors.RED, Colors.TEAL
         ]
 
         # Ketron Pedal and Tab MIDI lookup dictionaries
@@ -287,6 +301,8 @@ class KeyLookupCache:
 
     def _build_cache(self):
         """Build lookup cache at startup"""
+        
+        # Build Default layer cache
         for i in range(12):
             key_id = self.config.get_key(i)
             mapped_key = self.macropad_key_map[key_id]
@@ -308,9 +324,35 @@ class KeyLookupCache:
             else:
                 self.cache[i] = (0, "", 0)
 
-    def get_key_midi(self, key_id):
+        # Build Shift Layer cache
+        for i in range(12):
+            key_id = self.config.get_key(i)
+            mapped_key = self.macropad_key_map_shift[key_id]
+
+            if mapped_key and len(mapped_key) > 2 and mapped_key[1] == ':':
+                try:
+                    lookup_key = int(mapped_key[0])
+                    midi_key = mapped_key[2:]
+
+                    if lookup_key == MIDIType.PEDAL:
+                        midi_value = self.pedal_midis.get(midi_key, 0)
+                    else:
+                        midi_value = self.tab_midis.get(midi_key, 0)
+
+                    self.cache_shift[i] = (lookup_key, midi_key, midi_value)
+                except (ValueError, IndexError):
+                    print("Error caching shift key {}: {}".format(i, mapped_key))
+                    self.cache_shift[i] = (0, "", 0)
+            else:
+                self.cache_shift[i] = (0, "", 0)
+
+
+    def get_key_midi(self, key_id, shift_mode):
         """Get cached MIDI data for key"""
-        return self.cache.get(key_id, (0, "", 0))
+        if shift_mode == ShiftKeyMode.ACTIVE:
+            return self.cache_shift.get(key_id, (0, "", 0))
+        else:
+            return self.cache.get(key_id, (0, "", 0))
 
     def validate_color_string(self, color_string):
         """Validate and return color code"""
@@ -479,6 +521,7 @@ class StateManager:
         self.encoder_sign = False
         self.rotor_flag = 0  # -1=slow, 0=off, 1=fast
         
+        # Controller Shift Mode based on Variation Key
         self.shift_mode = ShiftKeyMode.OFF
 
         # Timing
@@ -611,14 +654,17 @@ class EVMController:
                 else:
                     self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
             else:
-                self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
+                if self.state.shift_mode == ShiftKeyMode.ACTIVE:
+                    self.macropad.pixels[pixel] = self.key_cache.macropad_color_map_shift[pixel]
+                else:
+                    self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
 
             self.state.lit_keys[pixel] = False
 
     def _handle_key_press(self, key_number):
         """Handle key press events"""
         key_id = self.config.get_key(key_number)
-        lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id)
+        lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id, self.state.shift_mode)
 
         # Send MIDI command
         if lookup_key == MIDIType.PEDAL:
@@ -756,26 +802,31 @@ class EVMController:
             try:
                 # Handle key events
                 key_event = self.macropad.keys.events.get()
-                if key_event and key_event.pressed:
-                    
-                    # Check for potential Shift Key operation. If Variation key pressed and held in, then
-                    # shift key is active and no MIDI "VARIATION" send until release
-                    if  key_event.key_number == VARIATION_KEY:
+                
+                # Pressed: Check for potential Shift Key operation. If Variation key pressed and held in, then
+                # shift key is pending and no MIDI "VARIATION" send until key release
+                if key_event and key_event.pressed:                    
+                    if key_event.key_number == VARIATION_KEY:
                         self.state.shift_mode = ShiftKeyMode.PENDING
-                        print("Shift mode: Pending")
+                        print("Shift mode: Pending")                        
+                        self.state.lit_keys[key_event.key_number] = True
+                        self.state.led_start_time = time.time()
                     else:
-                        if self.state.shift_mode == ShiftKeyMode.PENDING: 
+                        if self.state.shift_mode == ShiftKeyMode.PENDING:
                             self.state.shift_mode = ShiftKeyMode.ACTIVE                        
                             print("Shift mode: Active")
                         self._handle_key_press(key_event.key_number)
 
-                # If Variation key released and still in pending or active mode, send MIDI "VATATION
+                # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
+                # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
-                    if self.state.shift_mode == ShiftKeyMode.PENDING or self.state.shift_mode == ShiftKeyMode.ACTIVE:
-                        if key_event.key_number == VARIATION_KEY:
+                    if key_event.key_number == VARIATION_KEY:
+                        if self.state.shift_mode == ShiftKeyMode.PENDING:
                             self._handle_key_press(key_event.key_number)
-                            self.state.shift_mode = ShiftKeyMode.OFF                        
-                            print("Shift mode: Off")
+                        
+                        self.state.shift_mode = ShiftKeyMode.OFF                        
+                        print("Shift mode: Off")
+                        self._preset_pixels()
                         
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
