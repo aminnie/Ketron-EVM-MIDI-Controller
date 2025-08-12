@@ -1,6 +1,4 @@
-# Write your code here :-)
-
-# Ketron EVM Button Controller with Quad Encoder
+# Ketron EVM Plus Button Controller with Quad Encoder
 
 import board, displayio, digitalio
 import terminalio
@@ -112,6 +110,10 @@ class MIDIHandler:
         self.pedal_sysex_2 = bytearray([0x05, 0x00, 0x00, 0x00])
         self.tab_sysex = bytearray([0x00, 0x00])
 
+        self.voice1_efx1 = bytearray([0x26, 0x7B, 0x07, 0x05, 0x00])
+        self.voice2_efx3 = bytearray([0x26, 0x7B, 0x3D, 0x05, 0x00])
+        self.realchord_efx3 = bytearray([0x26, 0x7B, 0x3F, 0x05, 0x00])
+
         self.cur_volume = 100
 
     def send_pedal_sysex(self, midi_value):
@@ -185,12 +187,17 @@ class MIDIHandler:
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
         try:
-            for x in range(4):
-                print("Sending test note: {}".format(x))
-                self.midi.send(NoteOn("C4", 120))
-                time.sleep(0.25)
-                self.midi.send(NoteOff("C4", 0))
-                time.sleep(0.25)
+            # Define the notes for a short segment of "Ode to Joy"
+            # Using MIDI note numbers (C4=60, D4=62, E4=64, F4=65, G4=67, A4=69, B4=71, C5=72)
+            # The snippet is: E-E-F-G-G-F-E-D-C-C-D-E-E-D-D
+            notes = [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] 
+            durations = [0.5] * len(notes)  # Each note lasts for 0.5 seconds        
+        
+            for note, duration in zip(notes, durations):
+                print("Sending test note: {}".format(note))
+                self.midi.send(NoteOn(note, 120))
+                time.sleep(duration)
+                self.midi.send(NoteOff(note, 0))
             return True
         except Exception as e:
             print("MIDI test failed: {}".format(e))
@@ -896,6 +903,10 @@ class EVMController:
 
     def run(self):
         """Main controller loop"""
+        
+        # Run initial MIDI test
+        self.midi_handler.test_connectivity()
+        
         while True:
             try:
                 # Handle key events
