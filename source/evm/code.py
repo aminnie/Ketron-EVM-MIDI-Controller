@@ -15,6 +15,9 @@ from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
 
+# Set to FALSE for no startup test
+TEST_CONNECT = False
+
 # --- Constants and Enums ---
 class MIDIType:
     PEDAL = 0
@@ -803,8 +806,9 @@ class EVMController:
     def run(self):
         """Main controller loop"""
         
-        # Uncomment to enable connectivity test
-        # self.midi_handler.test_connectivity()
+        # Enable connectivity test
+        if TEST_CONNECT == True:
+            self.midi_handler.test_connectivity()
         
         while True:
             try:
