@@ -1,7 +1,6 @@
 # Yamaha Genos Arranger Controller
 # https://usa.yamaha.com/products/musical_instruments/keyboards/arranger_workstations/genos2/downloads.html
 
-
 import board, displayio
 import terminalio
 import time
@@ -16,6 +15,9 @@ from adafruit_midi.control_change import ControlChange
 from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.system_exclusive import SystemExclusive
+
+# Set to FALSE for no startup test
+TEST_CONNECT = True
 
 # --- Constants and Enums ---
 class EncoderMode:
@@ -588,7 +590,7 @@ class EVMController:
 
         midi = adafruit_midi.MIDI(
             midi_in=usb_midi.ports[0], in_channel=0,
-            midi_out=usb_midi.ports[1], out_channel=1
+            midi_out=usb_midi.ports[1], out_channel=0
         )
 
         self.midi_handler = MIDIHandler(midi)
@@ -735,7 +737,8 @@ class EVMController:
     def run(self):
         """Main controller loop"""
         
-        self.midi_handler.test_connectivity()
+        if TEST_CONNECT == True:
+            self.midi_handler.test_connectivity()
         
         while True:
             try:
