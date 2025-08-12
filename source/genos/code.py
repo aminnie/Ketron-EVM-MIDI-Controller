@@ -1,4 +1,3 @@
-
 # Yamaha Genos Arranger Controller
 # https://usa.yamaha.com/products/musical_instruments/keyboards/arranger_workstations/genos2/downloads.html
 
@@ -222,16 +221,21 @@ class MIDIHandler:
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
         try:
-            for x in range(4):
-                print("Sending test note: {}".format(x))
-                self.midi.send(NoteOn("C4", 120))
-                time.sleep(0.25)
-                self.midi.send(NoteOff("C4", 0))
-                time.sleep(0.25)
+            # Define the notes for a short segment of "Ode to Joy"
+            # Using MIDI note numbers (C4=60, D4=62, E4=64, F4=65, G4=67, A4=69, B4=71, C5=72)
+            # The snippet is: E-E-F-G-G-F-E-D-C-C-D-E-E-D-D
+            notes = [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] 
+            durations = [0.5] * len(notes)  # Each note lasts for 0.5 seconds        
+        
+            for note, duration in zip(notes, durations):
+                self.midi.send(NoteOn(note, 120))
+                time.sleep(duration)
+                self.midi.send(NoteOff(note, 0))
             return True
         except Exception as e:
             print("MIDI test failed: {}".format(e))
             return False
+
 
 # --- Key Lookup Cache for Performance ---
 class KeyLookupCache:
@@ -730,6 +734,9 @@ class EVMController:
 
     def run(self):
         """Main controller loop"""
+        
+        self.midi_handler.test_connectivity()
+        
         while True:
             try:
                 # Handle key events
