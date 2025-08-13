@@ -22,6 +22,9 @@ import adafruit_seesaw.neopixel
 import adafruit_seesaw.rotaryio
 import adafruit_seesaw.seesaw
 
+# Enable or disable test tune on startup
+TEST_CONNECT = False
+
 # --- Constants and Enums ---
 class EncoderMode:
     ROTOR = 0
@@ -104,6 +107,7 @@ class MIDIHandler:
         self.midi = midi_instance
         self.manufacturer_id_pedal = bytearray([0x26, 0x79])
         self.manufacturer_id_tab = bytearray([0x26, 0x7C])
+        self.manufacturer_id_efx = bytearray([0x26, 0x7B])
 
         # Pre-allocate bytearrays for memory efficiency
         self.pedal_sysex_1 = bytearray([0x03, 0x00, 0x00])
@@ -183,6 +187,49 @@ class MIDIHandler:
         except Exception as e:
             print("Error sending volume: {}".format(e))
             return False        
+
+    def send_realchord_efx_sysex(self, volume):
+        """Send SysEx for RealChord Level command"""
+        self.voice_efx = bytearray([0x3F, 0x05, 0x00])
+
+        try:
+            self.voice_efx[2] = volume
+            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
+            self.midi.send(sysex_message)
+
+            return True
+        except Exception as e:
+            print("Error sending RealChord EFX SysEx: {}".format(e))
+            return False
+
+    def send_voice1_efx_sysex(self, volume):
+        """Send SysEx for Voice1 Level command"""
+        self.voice_efx = bytearray([0x07, 0x05, 0x00])
+
+        try:
+            self.voice_efx[2] = volume
+            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
+            self.midi.send(sysex_message)
+
+            return True
+        except Exception as e:
+            print("Error sending Voice1 EFX SysEx: {}".format(e))
+            return False
+
+    def send_voice2_efx_sysex(self, volume):
+        """Send SysEx for Voice2 Level command"""
+        self.voice_efx = bytearray([0x3D, 0x05, 0x00])
+
+        try:
+            self.voice_efx[2] = volume
+            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
+            self.midi.send(sysex_message)
+
+            return True
+        except Exception as e:
+            print("Error sending Voice2 EFX SysEx: {}".format(e))
+            return False
+
 
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
@@ -794,17 +841,16 @@ class EVMController:
         if encoder_number == 0:            
             midi_channel = self.state.chan_drawbar
             self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
-        if encoder_number == 1:
-            midi_channel = self.state.chan_upper1
+            self.midi_handler.send_quad_volume(midi_channel, volume)
+        elif encoder_number == 1:
             self.display.update_text(9, f"QUAD Upper1 Vol:{volume}")
+            self.midi_handler.send_voice2_efx_sysex(volume)
         elif encoder_number == 2:
-            midi_channel = self.state.chan_upper2
             self.display.update_text(9, f"QUAD Upper2 Vol:{volume}")
+            self.midi_handler.send_voice1_efx_sysex(volume)
         elif encoder_number == 3:
-            midi_channel = self.state.chan_lower
-            self.display.update_text(9, f"QUAD Lower Vol:{volume}")
-
-        self.midi_handler.send_quad_volume(midi_channel, volume)
+            self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
+            self.midi_handler.send_realchord_efx_sysex(volume)
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
@@ -905,7 +951,8 @@ class EVMController:
         """Main controller loop"""
         
         # Run initial MIDI test
-        self.midi_handler.test_connectivity()
+        if TEST_CONNECT == True:
+            self.midi_handler.test_connectivity()
         
         while True:
             try:
