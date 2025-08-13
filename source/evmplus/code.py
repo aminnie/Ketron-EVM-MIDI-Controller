@@ -69,6 +69,9 @@ COLOR_MAP = {
 # Key used to reflect timed Eccoder mode changes on LED
 VARIATION_KEY = 0
 
+# Key used to trigger test tune
+TUNE_KEY = 11
+
 # --- Configuration Class ---
 class EVMConfig:
     def __init__(self):
@@ -88,6 +91,7 @@ class EVMConfig:
         self.value_timer = 60
         self.version_timer = 15
         self.key_bright_timer = 0.20
+        self.key_hold_timer = 0.50
 
         # Quad encoder variables
         self.quad_encoders = []
@@ -541,6 +545,7 @@ class StateManager:
         self.value_start_time = 0
         self.version_start_time = 0
         self.led_start_time = 0
+        self.key_start_time = 0
 
         # Preset version display to end after 15s
         self.version_start_time = time.time()
@@ -662,7 +667,7 @@ class EVMController:
 
         midi = adafruit_midi.MIDI(
             midi_in=usb_midi.ports[0], in_channel=0,
-            midi_out=usb_midi.ports[1], out_channel=1
+            midi_out=usb_midi.ports[1], out_channel=4
         )
 
         self.midi_handler = MIDIHandler(midi)
@@ -820,10 +825,10 @@ class EVMController:
 
         if encoder_number == 0:
             self.display.update_text(9, f"QUAD Upper1 Vol:{volume}")
-            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice1, volume)
+            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice2, volume)
         elif encoder_number == 1:
             self.display.update_text(9, f"QUAD Upper2 Vol:{volume}")
-            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice2, volume)
+            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice1, volume)
         elif encoder_number == 2:
             self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
             self.midi_handler.send_efxlevel_sysex(EFXLevel.RealChord, volume)
@@ -935,10 +940,17 @@ class EVMController:
         
         while True:
             try:
-                # Handle key events
+                # Handle key events, tracking start time
                 key_event = self.macropad.keys.events.get()
                 if key_event and key_event.pressed:
                     self._handle_key_press(key_event.key_number)
+                    self.config.key_start_time = time.time()
+
+                # Auto trigger test tune if key held in for timed seconds
+                if key_event and key_event.released:
+                    if key_event.key_number == TUNE_KEY and (time.time() - self.config.key_start_time) >= self.config.key_hold_timer:
+                        print("Starting test tune")
+                        self.midi_handler.test_connectivity()
 
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
