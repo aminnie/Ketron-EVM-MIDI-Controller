@@ -40,6 +40,12 @@ class MIDIStatus:
     OFF = 0x00
     ON = 0x7F
 
+class EFXLevel:
+    Voice1 = 0x07
+    Voice2 = 0x3D
+    RealChord = 0x08
+    LeftGM = 0x3F
+
 class Colors:
     WHITE = 0x606060
     BLUE = 0x000020
@@ -114,6 +120,9 @@ class MIDIHandler:
         self.pedal_sysex_2 = bytearray([0x05, 0x00, 0x00, 0x00])
         self.tab_sysex = bytearray([0x00, 0x00])
 
+        # EFX Level/Volume
+        self.efx_level_sysex = bytearray([0x00, 0x05, 0x00])
+
         self.cur_volume = 100
 
     def send_pedal_sysex(self, midi_value):
@@ -184,62 +193,18 @@ class MIDIHandler:
             print("Error sending volume: {}".format(e))
             return False        
 
-    def send_realchord_efx_sysex(self, volume):
-        """Send SysEx for RealChord Level command"""
-        self.voice_efx = bytearray([0x3F, 0x05, 0x00])
-
+    def send_efxlevel_sysex(self, efxcode, volume):
+        """Send SysEx EFX Level/Volume commands"""
         try:
-            self.voice_efx[2] = volume
-            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
+            self.efx_level_sysex[0] = efxcode
+            self.efx_level_sysex[2] = volume
+            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.efx_level_sysex)
             self.midi.send(sysex_message)
 
             return True
         except Exception as e:
-            print("Error sending RealChord EFX SysEx: {}".format(e))
+            print("Error sending EFX Level SysEx: {}".format(e))
             return False
-
-    def send_leftgm_efx_sysex(self, volume):
-        """Send SysEx for Left/GM Level command"""
-        self.voice_efx = bytearray([0x08, 0x05, 0x00])
-
-        try:
-            self.voice_efx[2] = volume
-            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
-            self.midi.send(sysex_message)
-
-            return True
-        except Exception as e:
-            print("Error sending Left/GM EFX SysEx: {}".format(e))
-            return False
-
-    def send_voice1_efx_sysex(self, volume):
-        """Send SysEx for Voice1 Level command"""
-        self.voice_efx = bytearray([0x07, 0x05, 0x00])
-
-        try:
-            self.voice_efx[2] = volume
-            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
-            self.midi.send(sysex_message)
-
-            return True
-        except Exception as e:
-            print("Error sending Voice1 EFX SysEx: {}".format(e))
-            return False
-
-    def send_voice2_efx_sysex(self, volume):
-        """Send SysEx for Voice2 Level command"""
-        self.voice_efx = bytearray([0x3D, 0x05, 0x00])
-
-        try:
-            self.voice_efx[2] = volume
-            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
-            self.midi.send(sysex_message)
-
-            return True
-        except Exception as e:
-            print("Error sending Voice2 EFX SysEx: {}".format(e))
-            return False
-
 
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
@@ -855,16 +820,16 @@ class EVMController:
 
         if encoder_number == 0:
             self.display.update_text(9, f"QUAD Upper1 Vol:{volume}")
-            self.midi_handler.send_voice2_efx_sysex(volume)
+            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice1, volume)
         elif encoder_number == 1:
             self.display.update_text(9, f"QUAD Upper2 Vol:{volume}")
-            self.midi_handler.send_voice1_efx_sysex(volume)
+            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice2, volume)
         elif encoder_number == 2:
             self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
-            self.midi_handler.send_realchord_efx_sysex(volume)
+            self.midi_handler.send_efxlevel_sysex(EFXLevel.RealChord, volume)
         elif encoder_number == 3:
             self.display.update_text(9, f"QUAD Left/GM Vol:{volume}")
-            self.midi_handler.send_leftgm_efx_sysex(volume)
+            self.midi_handler.send_efxlevel_sysex(EFXLevel.LeftGM, volume)
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
