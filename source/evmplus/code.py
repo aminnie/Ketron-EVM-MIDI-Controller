@@ -114,10 +114,6 @@ class MIDIHandler:
         self.pedal_sysex_2 = bytearray([0x05, 0x00, 0x00, 0x00])
         self.tab_sysex = bytearray([0x00, 0x00])
 
-        self.voice1_efx1 = bytearray([0x26, 0x7B, 0x07, 0x05, 0x00])
-        self.voice2_efx3 = bytearray([0x26, 0x7B, 0x3D, 0x05, 0x00])
-        self.realchord_efx3 = bytearray([0x26, 0x7B, 0x3F, 0x05, 0x00])
-
         self.cur_volume = 100
 
     def send_pedal_sysex(self, midi_value):
@@ -200,6 +196,20 @@ class MIDIHandler:
             return True
         except Exception as e:
             print("Error sending RealChord EFX SysEx: {}".format(e))
+            return False
+
+    def send_leftgm_efx_sysex(self, volume):
+        """Send SysEx for Left/GM Level command"""
+        self.voice_efx = bytearray([0x08, 0x05, 0x00])
+
+        try:
+            self.voice_efx[2] = volume
+            sysex_message = SystemExclusive(self.manufacturer_id_efx, self.voice_efx)
+            self.midi.send(sysex_message)
+
+            return True
+        except Exception as e:
+            print("Error sending Left/GM EFX SysEx: {}".format(e))
             return False
 
     def send_voice1_efx_sysex(self, volume):
@@ -837,20 +847,24 @@ class EVMController:
     def _process_quad_volume(self, encoder_number, volume):
         """Process Quad Encoder Volumes"""
         # Lookup channel for the quad encoder number before sending
-        midi_channel = 0
-        if encoder_number == 0:            
-            midi_channel = self.state.chan_drawbar
-            self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
-            self.midi_handler.send_quad_volume(midi_channel, volume)
-        elif encoder_number == 1:
+        #midi_channel = 0
+        #if encoder_number == 0:            
+        #    midi_channel = self.state.chan_drawbar
+        #    self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
+        #    self.midi_handler.send_quad_volume(midi_channel, volume)
+
+        if encoder_number == 0:
             self.display.update_text(9, f"QUAD Upper1 Vol:{volume}")
             self.midi_handler.send_voice2_efx_sysex(volume)
-        elif encoder_number == 2:
+        elif encoder_number == 1:
             self.display.update_text(9, f"QUAD Upper2 Vol:{volume}")
             self.midi_handler.send_voice1_efx_sysex(volume)
-        elif encoder_number == 3:
+        elif encoder_number == 2:
             self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
             self.midi_handler.send_realchord_efx_sysex(volume)
+        elif encoder_number == 3:
+            self.display.update_text(9, f"QUAD Left/GM Vol:{volume}")
+            self.midi_handler.send_leftgm_efx_sysex(volume)
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
