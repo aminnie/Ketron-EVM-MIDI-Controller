@@ -218,7 +218,7 @@ class MIDIHandler:
             # The snippet is: E-E-F-G-G-F-E-D-C-C-D-E-E-D-D
             notes = [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] 
             durations = [0.5] * len(notes)  # Each note lasts for 0.5 seconds        
-        
+
             for note, duration in zip(notes, durations):
                 print("Sending test note: {}".format(note))
                 self.midi.send(NoteOn(note, 120))
@@ -526,7 +526,7 @@ class DisplayManager:
 
     def update_text(self, index, text):
         """Update label text safely"""
-        
+
         if 0 <= index < len(self.labels):
             self.labels[index].text = text
 
@@ -933,11 +933,7 @@ class EVMController:
 
     def run(self):
         """Main controller loop"""
-        
-        # Run initial MIDI test
-        if TEST_CONNECT == True:
-            self.midi_handler.test_connectivity()
-        
+                
         while True:
             try:
                 # Handle key events, tracking start time
@@ -950,7 +946,9 @@ class EVMController:
                 if key_event and key_event.released:
                     if key_event.key_number == TUNE_KEY and (time.time() - self.config.key_start_time) >= self.config.key_hold_timer:
                         print("Starting test tune")
+                        self.display.update_text(9, "Playing Test Tune")
                         self.midi_handler.test_connectivity()
+                        self.display.update_text(9, "")
 
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
