@@ -35,6 +35,7 @@ class EncoderMode:
 class MIDIType:
     PEDAL = 0
     TAB = 1
+    MACRO = 2
 
 class MIDIStatus:
     OFF = 0x00
@@ -239,12 +240,19 @@ class KeyLookupCache:
         self.macropad_key_map = [
             "1:VARIATION", "0:Arr.A", "0:Intro/End1", "0:Fill",
             "0:Arr.B", "0:Intro/End2","0:Break", "0:Arr.C",
-            "0:Intro/End3", "0:Start/Stop", "0:Arr.D", "0:To End"
+            "0:Intro/End3", "0:Start/Stop", "2:PLUG", "0:To End"
         ]
         self.macropad_color_map = [
             Colors.BLUE, Colors.BLUE, Colors.GREEN, Colors.GREEN,
             Colors.BLUE, Colors.GREEN, Colors.ORANGE, Colors.BLUE,
             Colors.GREEN, Colors.RED, Colors.BLUE, Colors.RED
+        ]
+
+        self.user_macro_midis = [
+            {
+                "PLUG": ["Drum Mute", "Bass Mute"],
+                "UNPLUG": ["Chords Mute", "Real Chords Mute"]
+            }
         ]
 
         # Ketron Pedal and Tab MIDI lookup dictionaries
@@ -729,29 +737,48 @@ class EVMController:
 
     def _handle_key_press(self, key_number):
         """Handle key press events"""
-        key_id = self.config.get_key(key_number)
-        lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id)
+        try:
+            key_id = self.config.get_key(key_number)
+            lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id)
 
-        # Send MIDI command
-        if lookup_key == MIDIType.PEDAL:
-            self.midi_handler.send_pedal_sysex(midi_value)
-        else:
-            self.midi_handler.send_tab_sysex(midi_value)
+            # print(f"get_key: {lookup_key}, {midi_key}, {midi_value}")
 
-        # Update display
-        self.display.update_text(3, "BUTTON: {}".format(midi_key))
+            # Send MIDI command or lookup and sebnd user macro MIDI commands
+            if lookup_key == MIDIType.PEDAL:
+                self.midi_handler.send_pedal_sysex(midi_value)
+                
+            elif lookup_key == MIDIType.TAB:
+                self.midi_handler.send_tab_sysex(midi_value)
+                
+            elif lookup_key == MIDIType.MACRO:
+                for macro in self.key_cache.user_macro_midis:
+                    for value in macro.get(midi_key, []):
+                        hex_value = self.key_cache.pedal_midis.get(value, "")
+                        if hex_value:
+                            self.midi_handler.send_pedal_sysex(hex_value)
 
-        # Handle special cases
-        if midi_key == "Start/Stop":
-            self.state.update_encoder_mode(EncoderMode.TEMPO)
-            self.display.update_text(6, "KNOB MODE: *Tempo")
+            else:
+                return midi_key
 
-        # Update LEDs
-        self._preset_pixels()
-        self.state.lit_keys[self.config.get_key(key_number)] = True
-        self.state.led_start_time = time.time()
+            # Update display
+            self.display.update_text(3, "BUTTON: {}".format(midi_key))
 
-        return midi_key
+            # Handle special cases
+            if midi_key == "Start/Stop":
+                self.state.update_encoder_mode(EncoderMode.TEMPO)
+                self.display.update_text(6, "KNOB MODE: *Tempo")
+
+            # Update LEDs
+            self._preset_pixels()
+            self.state.lit_keys[self.config.get_key(key_number)] = True
+            self.state.led_start_time = time.time()
+
+            return midi_key
+            
+        except Exception as e:
+            print(f"Error: Sending key {key_number} ".format(e))
+            return False        
+        
 
     def _handle_encoder_change(self, direction):
         """Handle encoder rotation"""
