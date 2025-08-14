@@ -213,17 +213,16 @@ class MIDIHandler:
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
         try:
-            # Define the notes for a short segment of "Ode to Joy"
+            # Notes for a short segment of "Ode to Joy"
             # Using MIDI note numbers (C4=60, D4=62, E4=64, F4=65, G4=67, A4=69, B4=71, C5=72)
-            # The snippet is: E-E-F-G-G-F-E-D-C-C-D-E-E-D-D
             notes = [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] 
-            durations = [0.5] * len(notes)  # Each note lasts for 0.5 seconds        
+            durations = [0.4] * len(notes)       
 
             for note, duration in zip(notes, durations):
-                print("Sending test note: {}".format(note))
                 self.midi.send(NoteOn(note, 120))
                 time.sleep(duration)
                 self.midi.send(NoteOff(note, 0))
+                time.sleep(duration/4)
             return True
         except Exception as e:
             print("MIDI test failed: {}".format(e))
@@ -558,13 +557,6 @@ class StateManager:
         
         self.quad_volumes = [0, 0, 0, 0]
 
-        # NIDI Channel - 1
-        # To do: Make configurable in config file
-        self.chan_volume = 15
-        self.chan_lower = 2
-        self.chan_upper1 = 3
-        self.chan_upper2 = 3
-        self.chan_drawbar = 3
 
     def update_encoder_mode(self, new_mode):
         """Update encoder mode with timed reset"""
