@@ -19,10 +19,17 @@ from adafruit_midi.system_exclusive import SystemExclusive
 TEST_CONNECT = False
 
 # --- Constants and Enums ---
+class EncoderMode:
+    ROTOR = 0
+    TEMPO = 1
+    VOLUME = 2
+    VALUE = 3
+
 class MIDIType:
     PEDAL = 0
     TAB = 1
-
+    MACRO = 2
+    
 class MIDIStatus:
     OFF = 0x00
     ON = 0x7F
@@ -37,6 +44,12 @@ class ShiftKeyMode:
     OFF = 0
     PENDING = 1
     ACTIVE = 2
+
+class EFXLevel:
+    Voice1 = 0x07
+    Voice2 = 0x3D
+    RealChord = 0x08
+    LeftGM = 0x3F
 
 class Colors:
     WHITE = 0x606060
@@ -63,6 +76,9 @@ COLOR_MAP = {
 # Key used to reflect timed Eccoder mode changes on LED
 VARIATION_KEY = 0
 
+# Key used to trigger test tune
+TUNE_KEY = 11
+
 # --- Configuration Class ---
 class EVMConfig:
     def __init__(self):
@@ -82,7 +98,8 @@ class EVMConfig:
         self.value_timer = 60
         self.version_timer = 15
         self.key_bright_timer = 0.20
-
+        self.key_hold_timer = 1
+        
         # Initialize MacroPad key mappings
         self.key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         if not self.usb_left:
@@ -97,15 +114,21 @@ class EVMConfig:
 
 # --- MIDI Handler Class ---
 class MIDIHandler:
-    def __init__(self, midi_instance):
+    def __init__(self, midi_instance, key_cache):
         self.midi = midi_instance
+        self.key_cache = key_cache
+        
         self.manufacturer_id_pedal = bytearray([0x26, 0x79])
         self.manufacturer_id_tab = bytearray([0x26, 0x7C])
-
+        self.manufacturer_id_efx = bytearray([0x26, 0x7B])
+        
         # Pre-allocate bytearrays for memory efficiency
         self.pedal_sysex_1 = bytearray([0x03, 0x00, 0x00])
         self.pedal_sysex_2 = bytearray([0x05, 0x00, 0x00, 0x00])
         self.tab_sysex = bytearray([0x00, 0x00])
+
+        # EFX Level/Volume
+        self.efx_level_sysex = bytearray([0x00, 0x05, 0x00])
 
         self.cur_volume = 100
 
@@ -153,7 +176,20 @@ class MIDIHandler:
             print("Error sending tab SysEx: {}".format(e))
             return False
 
-    def send_volume(self, updown):
+    def send_macro_sysex(self, midi_key):
+        """Send one or more macro SysEx message(s)"""
+        try:
+            for macro in self.key_cache.user_macro_midis:
+                for value in macro.get(midi_key, []):
+                    hex_value = self.key_cache.pedal_midis.get(value, "")
+                    if hex_value:
+                        self.send_pedal_sysex(hex_value)
+            return True
+        except Exception as e:
+            print("Error sending macros SysEx: {}".format(e))
+            return False
+
+    def send_master_volume(self, updown):
         """Send volume control via CC11"""
         try:
             # Change volume in 8-unit increments
@@ -171,16 +207,16 @@ class MIDIHandler:
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
         try:
-            # Define the notes for a short segment of "Ode to Joy"
+            # Notes for a short segment of "Ode to Joy"
             # Using MIDI note numbers (C4=60, D4=62, E4=64, F4=65, G4=67, A4=69, B4=71, C5=72)
-            # The snippet is: E-E-F-G-G-F-E-D-C-C-D-E-E-D-D
             notes = [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] 
-            durations = [0.5] * len(notes)  # Each note lasts for 0.5 seconds        
-        
+            durations = [0.4] * len(notes)       
+
             for note, duration in zip(notes, durations):
                 self.midi.send(NoteOn(note, 120))
                 time.sleep(duration)
                 self.midi.send(NoteOff(note, 0))
+                time.sleep(duration/4)
             return True
         except Exception as e:
             print("MIDI test failed: {}".format(e))
@@ -207,7 +243,7 @@ class KeyLookupCache:
         ]
 
         self.macropad_key_map_shift = [
-            "1:VARIATION", "0:Lead Mute", "1:TRANSP_DOWN", "0:HALF BAR",
+            "1:VARIATION", "2:VOICEMUTE", "1:TRANSP_DOWN", "0:HALF BAR",
             "0:FILL & DRUM IN", "1:TRANSP_UP","0:Tempo Form", "0:Bass & Drum",
             "1:OCTAVE_UP", "0:Transpose Form", "0:Arr.Off", "1:OCTAVE_DOWN"
         ]
@@ -215,6 +251,14 @@ class KeyLookupCache:
             Colors.RED, Colors.BLUE, Colors.YELLOW, Colors.PURPLE,
             Colors.GREEN, Colors.YELLOW, Colors.ORANGE, Colors.GREEN,
             Colors.TEAL, Colors.PURPLE, Colors.RED, Colors.TEAL
+        ]
+
+        self.user_macro_midis = [
+            {
+                "PLUG": ["Drum Mute", "Bass Mute"],
+                "UNPLUG": ["Chords Mute", "Real Chords Mute"],
+                "VOICEMUTE": [ "Bass Mute", "Low. Mute", "Lead Mute"]
+            }
         ]
 
         # Ketron Pedal and Tab MIDI lookup dictionaries
@@ -352,7 +396,6 @@ class KeyLookupCache:
                     self.cache_shift[i] = (0, "", 0)
             else:
                 self.cache_shift[i] = (0, "", 0)
-
 
     def get_key_midi(self, key_id, shift_mode):
         """Get cached MIDI data for key"""
@@ -604,16 +647,16 @@ class EVMController:
         self.config = EVMConfig()
         self.state = StateManager(self.config)
 
-        # Initialize MIDI
-        self._init_midi()
-
-        # Initialize MacroPad
-        self._init_macropad()
-
         # Initialize key cache and config
         self.key_cache = KeyLookupCache(self.config)
         self.config_handler = ConfigFileHandler(self.key_cache, self.config)
 
+        # Initialize MIDI
+        self._init_midi(self.key_cache)
+
+        # Initialize MacroPad
+        self._init_macropad()
+        
         # Load configuration
         config_loaded = self.config_handler.load_config()
 
@@ -628,17 +671,17 @@ class EVMController:
 
         print("Pad Controller Ready")
 
-    def _init_midi(self):
-        """Initialize MIDI connections"""
+    def _init_midi(self, key_cache):
+        """Initialize MIDI connections"""        
         print("Preparing Macropad Midi")
         print(usb_midi.ports)
 
         midi = adafruit_midi.MIDI(
             midi_in=usb_midi.ports[0], in_channel=0,
-            midi_out=usb_midi.ports[1], out_channel=1
+            midi_out=usb_midi.ports[1], out_channel=4
         )
 
-        self.midi_handler = MIDIHandler(midi)
+        self.midi_handler = MIDIHandler(midi, key_cache)
 
     def _init_macropad(self):
         """Initialize MacroPad hardware"""
@@ -670,30 +713,44 @@ class EVMController:
 
     def _handle_key_press(self, key_number):
         """Handle key press events"""
-        key_id = self.config.get_key(key_number)
-        lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id, self.state.shift_mode)
+        try:
+            key_id = self.config.get_key(key_number)
+            lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id, self.state.shift_mode)
 
-        # Send MIDI command
-        if lookup_key == MIDIType.PEDAL:
-            self.midi_handler.send_pedal_sysex(midi_value)
-        else:
-            self.midi_handler.send_tab_sysex(midi_value)
+            # print(f"get_key: {lookup_key}, {midi_key}, {midi_value}")
 
-        # Update display
-        self.display.update_text(3, "BUTTON: {}".format(midi_key))
+            # Send MIDI command or lookup and sebnd user macro MIDI commands
+            if lookup_key == MIDIType.PEDAL:
+                self.midi_handler.send_pedal_sysex(midi_value)
+                
+            elif lookup_key == MIDIType.TAB:
+                self.midi_handler.send_tab_sysex(midi_value)
+                
+            elif lookup_key == MIDIType.MACRO:
+                self.midi_handler.send_macro_sysex(midi_key)
+                
+            else:
+                return midi_key
 
-        # Handle special cases
-        if midi_key == "Start/Stop":
-            self.state.update_encoder_mode(EncoderMode.TEMPO)
-            self.display.update_text(6, "KNOB MODE: *Tempo")
+            # Update display
+            self.display.update_text(3, "BUTTON: {}".format(midi_key))
 
-        # Update LEDs
-        self._preset_pixels()
-        self.state.lit_keys[self.config.get_key(key_number)] = True
-        self.state.led_start_time = time.time()
+            # Handle special cases
+            if midi_key == "Start/Stop":
+                self.state.update_encoder_mode(EncoderMode.TEMPO)
+                self.display.update_text(6, "KNOB MODE: *Tempo")
 
-        return midi_key
+            # Update LEDs
+            self._preset_pixels()
+            self.state.lit_keys[self.config.get_key(key_number)] = True
+            self.state.led_start_time = time.time()
 
+            return midi_key
+            
+        except Exception as e:
+            print(f"Error: Sending key {key_number} ".format(e))
+            return False
+            
     def _handle_encoder_change(self, direction):
         """Handle encoder rotation"""
         self.state.encoder_sign = not self.state.encoder_sign
@@ -705,7 +762,7 @@ class EVMController:
             self._process_tempo(direction)
             self.state.tempo_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VOLUME:
-            self._process_volume(direction)
+            self._process_master_volume(direction)
             self.state.volume_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VALUE:
             self._process_value(direction)
@@ -737,7 +794,7 @@ class EVMController:
 
         self.midi_handler.send_pedal_sysex(midi_value)
 
-    def _process_volume(self, direction):
+    def _process_master_volume(self, direction):
         """Process volume up/down commands"""
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
@@ -806,10 +863,6 @@ class EVMController:
     def run(self):
         """Main controller loop"""
         
-        # Enable connectivity test
-        if TEST_CONNECT == True:
-            self.midi_handler.test_connectivity()
-        
         while True:
             try:
                 # Handle key events
@@ -829,6 +882,8 @@ class EVMController:
                             print("Shift mode: Active")
                         self._handle_key_press(key_event.key_number)
 
+                    self.config.key_start_time = time.time()
+
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
@@ -839,6 +894,12 @@ class EVMController:
                         self.state.shift_mode = ShiftKeyMode.OFF                        
                         print("Shift mode: Off")
                         self._preset_pixels()
+                        
+                    elif key_event.key_number == TUNE_KEY and (time.time() - self.config.key_start_time) >= self.config.key_hold_timer:
+                        print("Starting test tune")
+                        self.display.update_text(9, "CHN #5: Test Tune")
+                        self.midi_handler.test_connectivity()
+                        self.display.update_text(9, "")        
                         
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:

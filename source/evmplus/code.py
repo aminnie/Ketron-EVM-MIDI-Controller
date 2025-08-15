@@ -399,8 +399,7 @@ class ConfigFileHandler:
         self.config_error = False
 
     def safe_file_read(self, filename):
-        """Safely read file with error handling"""
-        
+        """Safely read file with error handling"""        
         try:
             with open(filename, "r") as f:
                 return f.readlines()
@@ -409,8 +408,7 @@ class ConfigFileHandler:
             return []
 
     def parse_config_line(self, line):
-        """Parse a single config line with validation"""
-        
+        """Parse a single config line with validation"""     
         try:
             line = line.strip()
             if line.startswith('#') or not line:
@@ -438,16 +436,14 @@ class ConfigFileHandler:
             return None
 
     def validate_midi_string(self, midi_type, command):
-        """Validate MIDI command against known commands"""
-        
+        """Validate MIDI command against known commands"""    
         if midi_type == MIDIType.PEDAL:
             return command in self.key_cache.pedal_midis
         else:
             return command in self.key_cache.tab_midis
 
     def load_config(self):
-        """Load and validate configuration file"""
-        
+        """Load and validate configuration file"""        
         key_index = 0
         config_errors = []
 
@@ -508,8 +504,7 @@ class DisplayManager:
         self._init_display()
 
     def _init_display(self):
-        """Initialize display layout"""
-        
+        """Initialize display layout"""        
         main_group = displayio.Group()
         self.macropad.display.root_group = main_group
 
@@ -539,8 +534,7 @@ class DisplayManager:
         self.show_startup_info()
 
     def show_startup_info(self):
-        """Display startup information"""
-        
+        """Display startup information""" 
         self.labels[3].text = self.config.display_sub_banner
         self.labels[6].text = "KNOB MODE: Rotor"
         # self.labels[9].text = "Version: {}".format(self.config.version)
@@ -548,7 +542,6 @@ class DisplayManager:
 
     def update_text(self, index, text):
         """Update label text safely"""
-
         if 0 <= index < len(self.labels):
             self.labels[index].text = text
 
@@ -582,8 +575,7 @@ class StateManager:
 
 
     def update_encoder_mode(self, new_mode):
-        """Update encoder mode with timed reset"""
-        
+        """Update encoder mode with timed reset"""       
         self.encoder_mode = new_mode
         current_time = time.time()
 
@@ -652,10 +644,6 @@ class EVMController:
         # Initialize MacroPad
         self._init_macropad()
 
-        # Initialize key cache and config
-        self.key_cache = KeyLookupCache(self.config)
-        self.config_handler = ConfigFileHandler(self.key_cache, self.config)
-
         # Load configuration
         config_loaded = self.config_handler.load_config()
 
@@ -679,8 +667,7 @@ class EVMController:
         print("Pad Controller Ready")
 
     def _init_midi(self, key_cache):
-        """Initialize MIDI connections"""
-        
+        """Initialize MIDI connections"""        
         print("Preparing Macropad Midi")
         print(usb_midi.ports)
 
@@ -692,8 +679,7 @@ class EVMController:
         self.midi_handler = MIDIHandler(midi, key_cache)
 
     def _init_macropad(self):
-        """Initialize MacroPad hardware"""
-        
+        """Initialize MacroPad hardware"""    
         print("Preparing MacroPad Display")
         self.macropad = MacroPad(rotation=0)
         self.state.encoder_position = self.macropad.encoder
@@ -794,7 +780,6 @@ class EVMController:
             print(f"Error: Sending key {key_number} ".format(e))
             return False        
         
-
     def _handle_encoder_change(self, direction):
         """Handle encoder rotation"""
         self.state.encoder_sign = not self.state.encoder_sign
@@ -884,8 +869,7 @@ class EVMController:
         self.midi_handler.send_tab_sysex(midi_value)
 
     def _handle_encoder_switch(self):        
-        """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""
-        
+        """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""        
         self.state.encoder_mode = self.state.encoder_mode + 1
         if self.state.encoder_mode > 2: self.state.encoder_mode = 0
         current_time = time.time()
