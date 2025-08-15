@@ -254,18 +254,19 @@ class KeyLookupCache:
         self.macropad_key_map = [
             "1:VARIATION", "0:Arr.A", "0:Intro/End1", "0:Fill",
             "0:Arr.B", "0:Intro/End2","0:Break", "0:Arr.C",
-            "0:Intro/End3", "0:Start/Stop", "2:PLUG", "0:To End"
+            "0:Intro/End3", "0:Start/Stop", "2:VOICEMUTE", "0:To End"
         ]
         self.macropad_color_map = [
             Colors.BLUE, Colors.BLUE, Colors.GREEN, Colors.GREEN,
             Colors.BLUE, Colors.GREEN, Colors.ORANGE, Colors.BLUE,
-            Colors.GREEN, Colors.RED, Colors.BLUE, Colors.RED
+            Colors.GREEN, Colors.RED, Colors.YELLOW, Colors.RED
         ]
 
         self.user_macro_midis = [
             {
                 "PLUG": ["Drum Mute", "Bass Mute"],
-                "UNPLUG": ["Chords Mute", "Real Chords Mute"]
+                "UNPLUG": ["Chords Mute", "Real Chords Mute"],
+                "VOICEMUTE": [ "Bass Mute", "Low. Mute", "Lead Mute"]
             }
         ]
 
