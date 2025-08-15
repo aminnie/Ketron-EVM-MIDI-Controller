@@ -92,7 +92,7 @@ class EVMConfig:
         self.value_timer = 60
         self.version_timer = 15
         self.key_bright_timer = 0.20
-        self.key_hold_timer = 0.50
+        self.key_hold_timer = 1
 
         # Quad encoder variables
         self.quad_encoders = []
@@ -114,8 +114,10 @@ class EVMConfig:
 
 # --- MIDI Handler Class ---
 class MIDIHandler:
-    def __init__(self, midi_instance):
+    def __init__(self, midi_instance, key_cache):
         self.midi = midi_instance
+        self.key_cache = key_cache
+        
         self.manufacturer_id_pedal = bytearray([0x26, 0x79])
         self.manufacturer_id_tab = bytearray([0x26, 0x7C])
         self.manufacturer_id_efx = bytearray([0x26, 0x7B])
@@ -131,8 +133,7 @@ class MIDIHandler:
         self.cur_volume = 100
 
     def send_pedal_sysex(self, midi_value):
-        """Send SysEx for Pedal commands"""
-        
+        """Send SysEx for Pedal commands"""    
         try:
             # Send ON followed by OFF Message
             if midi_value < 128:
@@ -173,6 +174,19 @@ class MIDIHandler:
             return True
         except Exception as e:
             print("Error sending tab SysEx: {}".format(e))
+            return False
+
+    def send_macro_sysex(self, midi_key):
+        """Send one or more macro SysEx message(s)"""
+        try:
+            for macro in self.key_cache.user_macro_midis:
+                for value in macro.get(midi_key, []):
+                    hex_value = self.key_cache.pedal_midis.get(value, "")
+                    if hex_value:
+                        self.send_pedal_sysex(hex_value)
+            return True
+        except Exception as e:
+            print("Error sending macros SysEx: {}".format(e))
             return False
 
     def send_master_volume(self, updown):
@@ -627,8 +641,12 @@ class EVMController:
         self.config = EVMConfig()
         self.state = StateManager(self.config)
 
+        # Initialize key cache and config
+        self.key_cache = KeyLookupCache(self.config)
+        self.config_handler = ConfigFileHandler(self.key_cache, self.config)
+
         # Initialize MIDI
-        self._init_midi()
+        self._init_midi(self.key_cache)
 
         # Initialize MacroPad
         self._init_macropad()
@@ -659,7 +677,7 @@ class EVMController:
 
         print("Pad Controller Ready")
 
-    def _init_midi(self):
+    def _init_midi(self, key_cache):
         """Initialize MIDI connections"""
         
         print("Preparing Macropad Midi")
@@ -670,7 +688,7 @@ class EVMController:
             midi_out=usb_midi.ports[1], out_channel=4
         )
 
-        self.midi_handler = MIDIHandler(midi)
+        self.midi_handler = MIDIHandler(midi, key_cache)
 
     def _init_macropad(self):
         """Initialize MacroPad hardware"""
@@ -751,12 +769,8 @@ class EVMController:
                 self.midi_handler.send_tab_sysex(midi_value)
                 
             elif lookup_key == MIDIType.MACRO:
-                for macro in self.key_cache.user_macro_midis:
-                    for value in macro.get(midi_key, []):
-                        hex_value = self.key_cache.pedal_midis.get(value, "")
-                        if hex_value:
-                            self.midi_handler.send_pedal_sysex(hex_value)
-
+                self.midi_handler.send_macro_sysex(midi_key)
+                
             else:
                 return midi_key
 
@@ -965,7 +979,7 @@ class EVMController:
                 if key_event and key_event.released:
                     if key_event.key_number == TUNE_KEY and (time.time() - self.config.key_start_time) >= self.config.key_hold_timer:
                         print("Starting test tune")
-                        self.display.update_text(9, "Playing Test Tune")
+                        self.display.update_text(9, "CHN #5: Test Tune")
                         self.midi_handler.test_connectivity()
                         self.display.update_text(9, "")
 
