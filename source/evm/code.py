@@ -43,7 +43,8 @@ class EncoderMode:
 class ShiftKeyMode:
     OFF = 0
     PENDING = 1
-    ACTIVE = 2
+    ACTIVE_SHIFT = 2
+    ACTIVE_LOCK = 3
 
 class EFXLevel:
     Voice1 = 0x07
@@ -244,7 +245,7 @@ class KeyLookupCache:
 
         self.macropad_key_map_shift = [
             "1:VARIATION", "2:VOICEMUTE", "1:TRANSP_DOWN", "0:HALF BAR",
-            "0:FILL & DRUM IN", "1:TRANSP_UP","0:Tempo Form", "0:Bass & Drum",
+            "0:FILL & DRUM IN", "1:TRANSP_UP","0:Tempo Form", "2:PLUGGED",
             "1:OCTAVE_UP", "0:Transpose Form", "0:Arr.Off", "1:OCTAVE_DOWN"
         ]
         self.macropad_color_map_shift = [
@@ -255,8 +256,8 @@ class KeyLookupCache:
 
         self.user_macro_midis = [
             {
-                "PLUG": ["Drum Mute", "Bass Mute"],
-                "UNPLUG": ["Chords Mute", "Real Chords Mute"],
+                "PLUGGED": ["Bass & Drum"],
+                "UNPLUGGED": ["Drum Mute", "Bass Mute"],
                 "VOICEMUTE": [ "Bass Mute", "Low. Mute", "Lead Mute"]
             }
         ]
@@ -399,7 +400,7 @@ class KeyLookupCache:
 
     def get_key_midi(self, key_id, shift_mode):
         """Get cached MIDI data for key"""
-        if shift_mode == ShiftKeyMode.ACTIVE:
+        if (shift_mode == ShiftKeyMode.ACTIVE_SHIFT) or (shift_mode == ShiftKeyMode.ACTIVE_LOCK):
             return self.cache_shift.get(key_id, (0, "", 0))
         else:
             return self.cache.get(key_id, (0, "", 0))
@@ -704,7 +705,7 @@ class EVMController:
                 else:
                     self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
             else:
-                if self.state.shift_mode == ShiftKeyMode.ACTIVE:
+                if (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK):
                     self.macropad.pixels[pixel] = self.key_cache.macropad_color_map_shift[pixel]
                 else:
                     self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
@@ -802,7 +803,7 @@ class EVMController:
         else:
             self.display.update_text(3, "KNOB: Volume Down{}".format(sign))
 
-        self.midi_handler.send_volume(direction)
+        self.midi_handler.send_master_volume(direction)
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
@@ -863,6 +864,11 @@ class EVMController:
     def run(self):
         """Main controller loop"""
         
+        key_start_time = 0
+        key_hold_timer = 0.25
+        shift_start_time  = 0      
+        shift_hold_timer = 0.25
+        
         while True:
             try:
                 # Handle key events
@@ -873,34 +879,42 @@ class EVMController:
                 if key_event and key_event.pressed:                    
                     if key_event.key_number == VARIATION_KEY:
                         self.state.shift_mode = ShiftKeyMode.PENDING
-                        print("Shift mode: Pending")                        
+                        print("Shift mode: Pending")
+                        
                         self.state.lit_keys[key_event.key_number] = True
                         self.state.led_start_time = time.time()
+                        shift_start_time = time.time()
                     else:
+                        # Other non VAR/Shift keys
                         if self.state.shift_mode == ShiftKeyMode.PENDING:
-                            self.state.shift_mode = ShiftKeyMode.ACTIVE                        
-                            print("Shift mode: Active")
-                        self._handle_key_press(key_event.key_number)
+                            self.state.shift_mode = ShiftKeyMode.ACTIVE_SHIFT                        
+                            print("Shift mode: Active Shift")
+                        self._handle_key_press(key_event.key_number)        # Send any key MIDI message
+                    key_start_time = time.time()                    
 
-                    self.config.key_start_time = time.time()
 
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
                     if key_event.key_number == VARIATION_KEY:
-                        if self.state.shift_mode == ShiftKeyMode.PENDING:
-                            self._handle_key_press(key_event.key_number)
-                        
-                        self.state.shift_mode = ShiftKeyMode.OFF                        
-                        print("Shift mode: Off")
-                        self._preset_pixels()
-                        
-                    elif key_event.key_number == TUNE_KEY and (time.time() - self.config.key_start_time) >= self.config.key_hold_timer:
-                        print("Starting test tune")
-                        self.display.update_text(9, "CHN #5: Test Tune")
-                        self.midi_handler.test_connectivity()
-                        self.display.update_text(9, "")        
-                        
+                        if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
+                            self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
+                            print("Shift mode: Active Lock")
+                            self._preset_pixels()
+
+                        elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
+                            self._handle_key_press(key_event.key_number)        # Send VAR MIDI message
+                            self.state.shift_mode = ShiftKeyMode.OFF                        
+                            print("Shift mode: Off")
+                            self._preset_pixels()
+                                                
+                    elif key_event.key_number == TUNE_KEY: 
+                        if (time.time() - key_start_time) > key_hold_timer:
+                            print("Starting test tune")
+                            self.display.update_text(9, "CHN #5: Test Tune")
+                            self.midi_handler.test_connectivity()
+                            self.display.update_text(9, "")        
+                            
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
                     direction = 1 if self.state.encoder_position < self.macropad.encoder else -1
