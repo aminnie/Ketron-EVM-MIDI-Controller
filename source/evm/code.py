@@ -888,6 +888,7 @@ class EVMController:
                         # Other non VAR/Shift keys
                         if self.state.shift_mode == ShiftKeyMode.PENDING:
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_SHIFT                        
+                            self.display.update_text(9, "Layer: Shift")
                             print("Shift mode: Active Shift")
                         self._handle_key_press(key_event.key_number)        # Send any key MIDI message
                     key_start_time = time.time()                    
@@ -899,12 +900,14 @@ class EVMController:
                     if key_event.key_number == VARIATION_KEY:
                         if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
+                            self.display.update_text(9, "Layer: Shift Lock")
                             print("Shift mode: Active Lock")
                             self._preset_pixels()
 
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
                             self._handle_key_press(key_event.key_number)        # Send VAR MIDI message
                             self.state.shift_mode = ShiftKeyMode.OFF                        
+                            self.display.update_text(9, "")
                             print("Shift mode: Off")
                             self._preset_pixels()
                                                 
