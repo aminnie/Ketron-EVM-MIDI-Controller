@@ -88,7 +88,7 @@ class ControllerConfig:
         # Timers for tempo, volume, and key brightness
         self.tempo_timer = 60
         self.volume_timer = 60
-        self.value_timer = 60
+        self.encoder_timer = 15
         self.version_timer = 15
         self.key_bright_timer = 0.20
         self.key_hold_timer = 1
@@ -596,6 +596,7 @@ class StateManager:
 
         # Preset version display to end after 15s
         self.version_start_time = time.time()
+        self.encoder_start_time = time.time()
 
         # LED state
         self.lit_keys = [False] * 12
@@ -614,13 +615,6 @@ class StateManager:
         """Check and handle encoder mode timeouts"""
         current_time = time.time()
 
-        # Revert tempo to rotor after timeout
-        if (self.encoder_mode == EncoderMode.TEMPO and
-            self.tempo_start_time != 0 and
-            current_time - self.tempo_start_time > self.config.tempo_timer):
-            self.encoder_mode = EncoderMode.ROTOR
-            return "timeout_tempo"
-
         # Revert volume to rotor after timeout
         if (self.encoder_mode == EncoderMode.VOLUME and
             self.volume_start_time != 0 and
@@ -632,6 +626,12 @@ class StateManager:
         if (self.version_start_time != 0 and
             current_time - self.version_start_time > self.config.version_timer):
             self.version_start_time = 0
+            return "timeout_version"
+
+        # Clear encoder value after timeout
+        if (self.encoder_start_time != 0 and
+            current_time - self.encoder_start_time > self.config.encoder_timer):
+            self.encoder_start_time = 0
             return "timeout_version"
 
         # Check LED timeout
@@ -708,12 +708,9 @@ class GenosController:
         try:
             key_id = self.config.get_key(key_number)
 
-            print(f"key_number: {key_number}")
-            print(f"key_id: {key_id}")
-
             lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id, self.state.shift_mode)
 
-            print(f"get_key: {lookup_key}, {midi_key}, {midi_value}")
+            # print(f"get_key: {lookup_key}, {midi_key}, {midi_value}")
 
             # Send MIDI command or lookup and sebnd user macro MIDI commands
             if lookup_key == MIDIType.NOTE:
@@ -729,7 +726,7 @@ class GenosController:
                 return midi_key
 
             # Update display
-            self.display.update_text(3, "BUTTON: {}".format(midi_key))
+            self.display.update_text(3, "NOTE: {}".format(midi_key))
 
             # Update LEDs
             self._preset_pixels()
@@ -768,7 +765,12 @@ class GenosController:
         print(f"Encoder Change: {direction}")
         
         self.state.encoder_sign = not self.state.encoder_sign
-        current_time = time.time()
+        encoder_timer = time.time()
+
+        if direction == 1:
+            self.display.update_text(6, "ENCODER: C#2")
+        else:
+            self.display.update_text(6, "ENCODER: C2")
 
         self.midi_handler.send_encoder_note(direction)
 
@@ -777,13 +779,11 @@ class GenosController:
         if (self.state.shift_mode == ShiftKeyMode.OFF) or (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
             self.display.update_text(9, "Shift: Active")
-            # print("Shift mode: Active Lock")
         else:
             self.state.shift_mode = ShiftKeyMode.OFF
             self.display.update_text(9, "Shift: Off")
-            # print("Shift mode: Off")
 
-        key_start_time = time.time()                    
+        version_timer = time.time()
         self._preset_pixels()
         
     def _update_display(self):
