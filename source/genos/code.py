@@ -80,7 +80,7 @@ class ControllerConfig:
     def __init__(self):
         self.display_banner =     "   YAMAHA GENOS     "
         self.display_sub_banner = "Arranger Controller "
-        self.version = "1.0"
+        self.version = "1.1"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -211,7 +211,7 @@ class MIDIHandler:
         try:
             for macro in self.key_cache.user_macro_midis:
                 for value in macro.get(midi_key, []):
-                    hex_value = self.key_cache.pedal_midis.get(value, "")
+                    hex_value = self.key_cache.note_midis.get(value, "")
                     if hex_value:
                         self.send_note(hex_value)
             return True
@@ -288,7 +288,7 @@ class KeyLookupCache:
 
         # Ketron Pedal and Tab MIDI lookup dictionaries
         self.note_midis = self._init_note_midis()
-        self.pedal_midis = self._init_pedal_midis()
+        self.section_midis = self._init_section_midis()
 
         self._build_cache()
 
@@ -365,6 +365,29 @@ class KeyLookupCache:
             "Txt Clear": 0xC0, "Voicetr. Edit": 0xC1, "Clear Image": 0xC2
         }
 
+    def _init_section_midis(self):
+        """Initialize Section MIDI dictionary"""
+        return {
+            "Intro 1": 0x00,
+            "Intro 2": 0x01,
+            "Intro 3": 0x02,
+            "Intro 4": 0x03,
+            "Main A": 0x08,
+            "Main B": 0x09,
+            "Main C": 0x0A,
+            "Main D": 0x0B,
+            "Fill In A": 0x10,
+            "Fill In B": 0x11,
+            "Fill In C": 0x12,
+            "Fill In D": 0x13,
+            "Break": 0x18,
+            "Ending 1": 0x20,
+            "Ending 2": 0x21,
+            "Ending 3": 0x22,
+            "Ending 4": 0x23,
+            "Start/Stop" : 0x00     # Special case coded to toggle between to messages
+    }
+
     def _build_cache(self):
         """Build lookup cache at startup"""
         
@@ -381,7 +404,7 @@ class KeyLookupCache:
                     if lookup_key == MIDIType.NOTE:
                         midi_value = self.note_midis.get(midi_key, 0)
                     else:
-                        midi_value = self.pedal_midis.get(midi_key, 0)
+                        midi_value = self.section_midis.get(midi_key, 0)
 
                     self.cache[i] = (lookup_key, midi_key, midi_value)
                 except (ValueError, IndexError):
@@ -403,7 +426,7 @@ class KeyLookupCache:
                     if lookup_key == MIDIType.NOTE:
                         midi_value = self.note_midis.get(midi_key, 0)
                     else:
-                        midi_value = self.pedal_midis.get(midi_key, 0)
+                        midi_value = self.section_midis.get(midi_key, 0)
 
                     self.cache_shift[i] = (lookup_key, midi_key, midi_value)
                 except (ValueError, IndexError):
@@ -469,10 +492,10 @@ class ConfigFileHandler:
 
     def validate_midi_string(self, midi_type, command):
         """Validate MIDI command against known commands"""
-        if midi_type == MIDIType.PEDAL:
-            return command in self.key_cache.pedal_midis
+        if midi_type == MIDIType.NOTE:
+            return command in self.key_cache.note_midis
         else:
-            return command in self.key_cache.tab_midis
+            return command in self.key_cache.section_midis
 
     def load_config(self):
         """Load and validate configuration file"""
@@ -568,8 +591,7 @@ class DisplayManager:
     def show_startup_info(self):
         """Display startup information"""
         self.labels[3].text = self.config.display_sub_banner
-        # self.labels[9].text = "Version: {}".format(self.config.version)
-        self.labels[9].text = "OS: {}".format(self.config.version)
+        self.labels[9].text = "Version: {}".format(self.config.version)
 
     def update_text(self, index, text):
         """Update label text safely"""
@@ -645,7 +667,7 @@ class StateManager:
 # --- Main Controller Class ---
 class GenosController:
     def __init__(self):
-        print("Initializing EVM Controller...")
+        print("Initializing Genos Controller...")
 
         # Initialize components
         self.config = ControllerConfig()
@@ -673,7 +695,7 @@ class GenosController:
         # Initialize pixels
         self._preset_pixels()
 
-        print("Pad Controller Ready")
+        print("Controller Ready")
 
     def _init_midi(self, key_cache):
         """Initialize MIDI connections"""        
@@ -762,7 +784,6 @@ class GenosController:
 
     def _handle_encoder_change(self, direction):
         """Handle encoder rotation"""
-        print(f"Encoder Change: {direction}")
         
         self.state.encoder_sign = not self.state.encoder_sign
         encoder_timer = time.time()
@@ -844,6 +865,7 @@ if __name__ == "__main__":
     try:
         controller = GenosController()
         controller.run()
+        
     except Exception as e:
         print("Fatal error: {}".format(e))
         # Try to display error if possible
