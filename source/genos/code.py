@@ -1,5 +1,8 @@
 # Yamaha Genos Button Controller
 
+# Note: The Genos does not seem to accept SysEx messages from external controllers.
+# It hadles MIDI NoteOn and NoteOff only and We may remove SysEx support to clean the code up
+
 import board, displayio
 import terminalio
 import time
@@ -90,10 +93,8 @@ class ControllerConfig:
         self.key_bright_timer = 0.20
         self.key_hold_timer = 1
         
-        # Initialize MacroPad key mappings
+        # Initialize MacroPad key mappings for Genos Layout
         self.key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-        if not self.usb_left:
-            self.key_map = [11 - i for i in range(12)]
 
     def get_key(self, key):
         """Safe key mapping with bounds checking"""
@@ -218,6 +219,14 @@ class MIDIHandler:
             print("Error sending macros Notes: {}".format(e))
             return False
 
+    def send_encoder_note(self, direction):
+        """Send notes for encodder rotate left and right"""
+        # To do: Add lookup similar to key press and consider shift state
+        if direction == 1:
+            self.send_note(0x31)
+        else:
+            self.send_note(0x30)
+
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
         try:
@@ -246,27 +255,27 @@ class KeyLookupCache:
         # Initialize MacroPad key & color mappings to default MIDI message values
         # USB drive keysconfig.txt file will override if present
         self.macropad_key_map = [
-            "0:C0", "0:C#0", "0:D0", "0:D#0",
-            "0:E0", "0:F0","0:F#0", "0:G0",
-            "0:G#0", "0:A0", "0:A#0", "0:B0"
+            "0:G#0", "0:E0", "0:C0", "0:A0",
+            "0:F0", "0:C#0","0:A#0", "0:F#0",
+            "0:D0", "0:B0", "0:G0", "0:D#0"
         ]
         self.macropad_color_map = [
             Colors.ORANGE, Colors.TEAL, Colors.GREEN,
             Colors.ORANGE, Colors.TEAL, Colors.GREEN,
             Colors.ORANGE, Colors.TEAL, Colors.GREEN,
-            Colors.RED, Colors.TEAL, Colors.ORANGE
+            Colors.ORANGE, Colors.TEAL, Colors.GREEN
         ]
 
         self.macropad_key_map_shift = [
-            "0:C1", "0:C#1", "0:D1", "0:D#1",
-            "0:E1", "0:F1","0:F#1", "0:G1",
-            "0:G#1", "0:A1", "0:A#1", "0:B1"
+            "0:G#1", "0:E1", "0:C1", "0:A1",
+            "0:F1", "0:C#1","0:A#1", "0:F#1",
+            "0:D1", "0:B1", "0:G1", "0:D#1"
         ]
         self.macropad_color_map_shift = [
             Colors.ORANGE, Colors.BLUE, Colors.GREEN,
             Colors.ORANGE, Colors.BLUE, Colors.GREEN,
             Colors.ORANGE, Colors.BLUE, Colors.GREEN,
-            Colors.RED, Colors.BLUE, Colors.ORANGE
+            Colors.ORANGE, Colors.BLUE, Colors.GREEN
         ]
 
         self.user_macro_midis = [
@@ -292,7 +301,8 @@ class KeyLookupCache:
             "G#0": 0x20,"A0": 0x21, "A#0": 0x22, "B0": 0x23, 
             "C1": 0x24, "C#1": 0x25, "D1": 0x26, "D#1": 0x27,
             "E1": 0x28, "F1": 0x29, "F#1": 0x2A, "G1": 0x2B, 
-            "G#1": 0x2C,"A1": 0x2D, "A#1": 0x2E, "B1": 0x2F 
+            "G#1": 0x2C,"A1": 0x2D, "A#1": 0x2E, "B1": 0x2F,
+            "C2": 0x30, "C#2": 0x31
         }
 
     def _init_pedal_midis(self):
@@ -672,7 +682,7 @@ class GenosController:
 
         midi = adafruit_midi.MIDI(
             midi_in=usb_midi.ports[0], in_channel=0,
-            midi_out=usb_midi.ports[1], out_channel=4
+            midi_out=usb_midi.ports[1], out_channel=15
         )
 
         self.midi_handler = MIDIHandler(midi, key_cache)
@@ -760,19 +770,18 @@ class GenosController:
         self.state.encoder_sign = not self.state.encoder_sign
         current_time = time.time()
 
-        if self.state.encoder_mode == EncoderMode.TEMPO:
-            self._process_tempo(direction)
+        self.midi_handler.send_encoder_note(direction)
 
     def _handle_encoder_switch(self):
         """Handle encoder switch"""
         if (self.state.shift_mode == ShiftKeyMode.OFF) or (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
             self.display.update_text(9, "Shift: Active")
-            print("Shift mode: Active Lock")
+            # print("Shift mode: Active Lock")
         else:
             self.state.shift_mode = ShiftKeyMode.OFF
             self.display.update_text(9, "Shift: Off")
-            print("Shift mode: Off")
+            # print("Shift mode: Off")
 
         key_start_time = time.time()                    
         self._preset_pixels()
@@ -802,56 +811,12 @@ class GenosController:
         
         while True:
             try:
-                # Handle key events
+                # Handle key events, press and release
                 key_event = self.macropad.keys.events.get()
                 
-                # Pressed: Check for potential Shift Key operation. If Variation key pressed and held in, then
-                # shift key is pending and no MIDI "VARIATION" send until key release
                 if key_event and key_event.pressed:                    
-                    '''
-                    if key_event.key_number == VARIATION_KEY:
-                        self.state.shift_mode = ShiftKeyMode.PENDING
-                        print("Shift mode: Pending")
-                        
-                        self.state.lit_keys[key_event.key_number] = True
-                        self.state.led_start_time = time.time()
-                        shift_start_time = time.time()
-                    else:
-                        # Other non VAR/Shift keys
-                        if self.state.shift_mode == ShiftKeyMode.PENDING:
-                            self.state.shift_mode = ShiftKeyMode.ACTIVE_SHIFT                        
-                            print("Shift mode: Active Shift")
-                        self._handle_key_press(key_event.key_number)        # Send any key MIDI message
-                    '''
                     self._handle_key_press(key_event.key_number)        # Send any key MIDI message
                     key_start_time = time.time()                    
-
-                # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
-                # Reset shift mode when in pending or active for Variation key release
-                if key_event and key_event.released:
-                    '''
-                    if key_event.key_number == VARIATION_KEY:
-            
-                        if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
-                            self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
-                            print("Shift mode: Active Lock")
-                            self.display.update_text(9, "Shift: Active")        
-                            self._preset_pixels()
-
-                        elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
-                            self._handle_key_press(key_event.key_number)        # Send VAR MIDI message
-                            self.state.shift_mode = ShiftKeyMode.OFF                        
-                            print("Shift mode: Off")
-                            self.display.update_text(9, "")        
-                            self._preset_pixels()
-                    '''
-                    
-                    if key_event.key_number == TUNE_KEY: 
-                        if (time.time() - key_start_time) > key_hold_timer:
-                            print("Starting test tune")
-                            self.display.update_text(9, "CHN #5: Test Tune")
-                            self.midi_handler.test_connectivity()
-                            self.display.update_text(9, "")        
                             
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
