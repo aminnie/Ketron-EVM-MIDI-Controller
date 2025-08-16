@@ -808,6 +808,7 @@ class GenosController:
                 # Pressed: Check for potential Shift Key operation. If Variation key pressed and held in, then
                 # shift key is pending and no MIDI "VARIATION" send until key release
                 if key_event and key_event.pressed:                    
+                    '''
                     if key_event.key_number == VARIATION_KEY:
                         self.state.shift_mode = ShiftKeyMode.PENDING
                         print("Shift mode: Pending")
@@ -821,12 +822,16 @@ class GenosController:
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_SHIFT                        
                             print("Shift mode: Active Shift")
                         self._handle_key_press(key_event.key_number)        # Send any key MIDI message
+                    '''
+                    self._handle_key_press(key_event.key_number)        # Send any key MIDI message
                     key_start_time = time.time()                    
 
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
+                    '''
                     if key_event.key_number == VARIATION_KEY:
+            
                         if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
                             print("Shift mode: Active Lock")
@@ -839,8 +844,9 @@ class GenosController:
                             print("Shift mode: Off")
                             self.display.update_text(9, "")        
                             self._preset_pixels()
-                                                
-                    elif key_event.key_number == TUNE_KEY: 
+                    '''
+                    
+                    if key_event.key_number == TUNE_KEY: 
                         if (time.time() - key_start_time) > key_hold_timer:
                             print("Starting test tune")
                             self.display.update_text(9, "CHN #5: Test Tune")
