@@ -1,4 +1,4 @@
-# Ketron EVM Button Controller
+# Yamaha Genos Button Controller
 
 import board, displayio
 import terminalio
@@ -20,25 +20,17 @@ TEST_CONNECT = False
 
 # --- Constants and Enums ---
 class EncoderMode:
-    ROTOR = 0
-    TEMPO = 1
-    VOLUME = 2
-    VALUE = 3
+    TEMPO = 0
+    VOLUME = 1
 
 class MIDIType:
-    PEDAL = 0
-    TAB = 1
+    NOTE = 0
+    PEDAL = 1
     MACRO = 2
     
 class MIDIStatus:
     OFF = 0x00
     ON = 0x7F
-
-class EncoderMode:
-    ROTOR = 0
-    TEMPO = 1
-    VOLUME = 2
-    VALUE = 3
 
 class ShiftKeyMode:
     OFF = 0
@@ -81,14 +73,11 @@ VARIATION_KEY = 0
 TUNE_KEY = 11
 
 # --- Configuration Class ---
-class EVMConfig:
+class ControllerConfig:
     def __init__(self):
-        self.display_banner =     "     Ketron EVM      "
+        self.display_banner =     "   YAMAHA GENOS     "
         self.display_sub_banner = "Arranger Controller "
-        self.version = "1.1"
-        #self.display_banner =     "    AJAMSONIC HS13   "
-        #self.display_sub_banner = "Pad Controller   "
-        #self.version = "5.1"
+        self.version = "1.0"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -118,91 +107,115 @@ class MIDIHandler:
     def __init__(self, midi_instance, key_cache):
         self.midi = midi_instance
         self.key_cache = key_cache
-        
-        self.manufacturer_id_pedal = bytearray([0x26, 0x79])
-        self.manufacturer_id_tab = bytearray([0x26, 0x7C])
-        self.manufacturer_id_efx = bytearray([0x26, 0x7B])
-        
-        # Pre-allocate bytearrays for memory efficiency
-        self.pedal_sysex_1 = bytearray([0x03, 0x00, 0x00])
-        self.pedal_sysex_2 = bytearray([0x05, 0x00, 0x00, 0x00])
-        self.tab_sysex = bytearray([0x00, 0x00])
 
-        # EFX Level/Volume
-        self.efx_level_sysex = bytearray([0x00, 0x05, 0x00])
+        self.manufacturer_id = bytearray([0x43])
+
+        # Pre-allocate bytearrays for memory efficiency
+        self.section_sysex = bytearray([0x7E, 0x00, 0x00, 0x00])
+        self.startstop_sysex = bytearray([0x00, 0x00])
+        self.tempo_sysex = bytearray([0x7E, 0x01, 0x00, 0x00, 0x00, 0x00])    # Tempo 1 to 4 up to value of 127
 
         self.cur_volume = 100
+        self.cur_tempo = 90
 
-    def send_pedal_sysex(self, midi_value):
-        """Send SysEx for Pedal commands"""
+    def send_section_sysex(self, midi_value):
+        """Send SysEx from Section set of commands"""
         try:
             # Send ON followed by OFF Message
-            if midi_value < 128:
-                self.pedal_sysex_1[1] = midi_value
-                self.pedal_sysex_1[2] = MIDIStatus.ON
-                sysex_message = SystemExclusive(self.manufacturer_id_pedal, self.pedal_sysex_1)
-                self.midi.send(sysex_message)
+            self.section_sysex[2] = midi_value
+            self.section_sysex[3] = MIDIStatus.ON
+            sysex_message = SystemExclusive(self.manufacturer_id, self.section_sysex)
+            self.midi.send(sysex_message)
 
-                self.pedal_sysex_1[2] = MIDIStatus.OFF
-                sysex_message = SystemExclusive(self.manufacturer_id_pedal, self.pedal_sysex_1)
-                self.midi.send(sysex_message)
-            else:
-                self.pedal_sysex_2[1] = (midi_value >> 7) & 0x7F
-                self.pedal_sysex_2[2] = midi_value & 0x7F
-                self.pedal_sysex_2[3] = MIDIStatus.ON
-                sysex_message = SystemExclusive(self.manufacturer_id_pedal, self.pedal_sysex_2)
-                self.midi.send(sysex_message)
-
-                self.pedal_sysex_2[3] = MIDIStatus.OFF
-                sysex_message = SystemExclusive(self.manufacturer_id_pedal, self.pedal_sysex_2)
-                self.midi.send(sysex_message)
+            self.section_sysex[3] = MIDIStatus.OFF
+            sysex_message = SystemExclusive(self.manufacturer_id, self.section_sysex)
+            self.midi.send(sysex_message)
             return True
         except Exception as e:
             print("Error sending pedal SysEx: {}".format(e))
             return False
 
-    def send_tab_sysex(self, midi_value):
-        """Send SysEx for Tab commands"""
-        try:
-            self.tab_sysex[0] = midi_value
-            self.tab_sysex[1] = MIDIStatus.ON
-            sysex_message = SystemExclusive(self.manufacturer_id_tab, self.tab_sysex)
-            self.midi.send(sysex_message)
+    def send_tempo_sysex(self, direction):
+        """Send Tempo SysEx command
+            To do: Update for Genos
+            F0 43 7E 01 t4 t3 t2 t1 F7"""
 
-            self.tab_sysex[1] = MIDIStatus.OFF
-            sysex_message = SystemExclusive(self.manufacturer_id_tab, self.tab_sysex)
+        # Tempo max = 127 and min = 0 in increments of 1 (or more) to manage encoder turns
+        if direction == 1:
+            self.cur_tempo = self.cur_tempo + 1
+            if self.cur_tempo > 500:
+                self.cur_tempo = 500
+        else:
+            self.cur_tempo = self.cur_tempo - 1
+            if self.cur_tempo < 0:
+                self.cur_tempo = 0
+
+        try:
+            self.tempo_sysex = self.tempo_genos(self.cur_tempo)
+            sysex_message = SystemExclusive(self.manufacturer_id, self.tempo_sysex)
             self.midi.send(sysex_message)
             return True
+
         except Exception as e:
-            print("Error sending tab SysEx: {}".format(e))
+            print("Error sending tempo SysEx: {}".format(e))
             return False
 
-    def send_macro_sysex(self, midi_key):
-        """Send one or more macro SysEx message(s)"""
+    """
+    Prepare to calculate and send Yamaha Tempo
+    See: https://forum.psrtutorial.com/index.php?topic=48303.0
+    """
+
+    def hex_convert(self, mynumber):
+        """Convert a number to hexadecimal string with even length padding"""
+        hex_string = hex(mynumber)[2:]  # Remove '0x' prefix
+
+        if len(hex_string) % 2:
+            hex_string = '0' + hex_string
+
+        return hex_string
+
+    def tempo_genos(self, tempo):
+        """Calculate tempo PSR or Genos (Yamaha SysEx format)"""
+        total_tempo = int(60000000 / tempo)
+
+        # Extract 7-bit chunks in Yamaha order (T4, T3, T2, T1)
+        x_tempo4 = (total_tempo >> 21) & 127  # 21 bit shift
+        x_tempo3 = (total_tempo >> 14) & 127  # 14 bit shift
+        x_tempo2 = (total_tempo >> 7) & 127   # 7 bit shift
+        x_tempo1 = total_tempo & 127          # 0 bit shift
+
+        # Build SysEx message - minus start and end which is added by Adafruit MIDI library
+        sysex_parts = bytearray([
+            0x01,     # Sub-status
+            x_tempo4,   # Tempo byte 4
+            x_tempo3,   # Tempo byte 3
+            x_tempo2,   # Tempo byte 2
+            x_tempo1    # Tempo byte 1
+        ])
+
+        return sysex_parts
+
+    def send_note(self, note):
+        """Send a MIDI note"""
+        try:
+            self.midi.send(NoteOn(note, 120))
+            self.midi.send(NoteOff(note, 0))
+            return True
+        except Exception as e:
+            print("MIDI note send failed: {}".format(e))
+            return False
+
+    def send_macro_notes(self, midi_key):
+        """Send one or more macro MIDI Note(s)"""
         try:
             for macro in self.key_cache.user_macro_midis:
                 for value in macro.get(midi_key, []):
                     hex_value = self.key_cache.pedal_midis.get(value, "")
                     if hex_value:
-                        self.send_pedal_sysex(hex_value)
+                        self.send_note(hex_value)
             return True
         except Exception as e:
-            print("Error sending macros SysEx: {}".format(e))
-            return False
-
-    def send_master_volume(self, updown):
-        """Send volume control via CC11"""
-        try:
-            # Change volume in 8-unit increments
-            if updown == -1:
-                self.cur_volume = max(0, self.cur_volume - 8)
-            else:
-                self.cur_volume = min(127, self.cur_volume + 8)
-
-            self.midi.send(ControlChange(11, self.cur_volume), channel=15)
-            return True
-        except Exception as e:
-            print("Error sending volume: {}".format(e))
+            print("Error sending macros Notes: {}".format(e))
             return False
 
     def test_connectivity(self):
@@ -233,40 +246,54 @@ class KeyLookupCache:
         # Initialize MacroPad key & color mappings to default MIDI message values
         # USB drive keysconfig.txt file will override if present
         self.macropad_key_map = [
-            "1:VARIATION", "0:Arr.A", "0:Intro/End1", "0:Fill",
-            "0:Arr.B", "0:Intro/End2","0:Break", "0:Arr.C",
-            "0:Intro/End3", "0:Start/Stop", "0:Arr.D", "0:To End"
+            "0:C0", "0:C#0", "0:D0", "0:D#0",
+            "0:E0", "0:F0","0:F#0", "0:G0",
+            "0:G#0", "0:A0", "0:A#0", "0:B0"
         ]
         self.macropad_color_map = [
-            Colors.BLUE, Colors.BLUE, Colors.GREEN, Colors.GREEN,
-            Colors.BLUE, Colors.GREEN, Colors.ORANGE, Colors.BLUE,
-            Colors.GREEN, Colors.RED, Colors.BLUE, Colors.RED
+            Colors.ORANGE, Colors.TEAL, Colors.GREEN,
+            Colors.ORANGE, Colors.TEAL, Colors.GREEN,
+            Colors.ORANGE, Colors.TEAL, Colors.GREEN,
+            Colors.RED, Colors.TEAL, Colors.ORANGE
         ]
 
         self.macropad_key_map_shift = [
-            "1:VARIATION", "2:VOICEMUTE", "1:TRANSP_DOWN", "0:HALF BAR",
-            "0:FILL & DRUM IN", "1:TRANSP_UP","0:Tempo Form", "2:PLUGGED",
-            "1:OCTAVE_UP", "0:Transpose Form", "0:Arr.Off", "1:OCTAVE_DOWN"
+            "0:C1", "0:C#1", "0:D1", "0:D#1",
+            "0:E1", "0:F1","0:F#1", "0:G1",
+            "0:G#1", "0:A1", "0:A#1", "0:B1"
         ]
         self.macropad_color_map_shift = [
-            Colors.RED, Colors.BLUE, Colors.YELLOW, Colors.PURPLE,
-            Colors.GREEN, Colors.YELLOW, Colors.ORANGE, Colors.GREEN,
-            Colors.TEAL, Colors.PURPLE, Colors.RED, Colors.TEAL
+            Colors.ORANGE, Colors.BLUE, Colors.GREEN,
+            Colors.ORANGE, Colors.BLUE, Colors.GREEN,
+            Colors.ORANGE, Colors.BLUE, Colors.GREEN,
+            Colors.RED, Colors.BLUE, Colors.ORANGE
         ]
 
         self.user_macro_midis = [
             {
-                "PLUGGED": ["Bass & Drum"],
-                "UNPLUGGED": ["Drum Mute", "Bass Mute"],
-                "VOICEMUTE": [ "Bass Mute", "Low. Mute", "Lead Mute"]
+                "PLUGGED": ["C0"],
+                "UNPLUGGED": ["C0", "C0"],
+                "VOICEMUTE": [ "C0", "C0", "C0"]
             }
         ]
 
         # Ketron Pedal and Tab MIDI lookup dictionaries
+        self.note_midis = self._init_note_midis()
         self.pedal_midis = self._init_pedal_midis()
-        self.tab_midis = self._init_tab_midis()
 
         self._build_cache()
+
+
+    def _init_note_midis(self):
+        """Initialize tab MIDI dictionary"""
+        return {
+            "C0": 0x18, "C#0": 0x19, "D0": 0x1A, "D#0": 0x1B,
+            "E0": 0x1C, "F0": 0x1D, "F#0": 0x1E, "G0": 0x1F, 
+            "G#0": 0x20,"A0": 0x21, "A#0": 0x22, "B0": 0x23, 
+            "C1": 0x24, "C#1": 0x25, "D1": 0x26, "D#1": 0x27,
+            "E1": 0x28, "F1": 0x29, "F#1": 0x2A, "G1": 0x2B, 
+            "G#1": 0x2C,"A1": 0x2D, "A#1": 0x2E, "B1": 0x2F 
+        }
 
     def _init_pedal_midis(self):
         """Initialize pedal MIDI dictionary"""
@@ -328,29 +355,6 @@ class KeyLookupCache:
             "Txt Clear": 0xC0, "Voicetr. Edit": 0xC1, "Clear Image": 0xC2
         }
 
-    def _init_tab_midis(self):
-        """Initialize tab MIDI dictionary"""
-        return {
-            "DIAL_DOWN": 0x0, "DIAL_UP": 0x1, "PLAYER_A": 0x2, "PLAYER_B": 0x3,
-            "ENTER": 0x4, "MENU": 0x6, "LYRIC": 0x7, "LEAD": 0x8, "VARIATION": 0x9,
-            "DRAWBARS_VIEW": 0x0a, "DRAWBARS": 0x10, "DRUMSET": 0x11, "TALK": 0x12,
-            "VOICETRON": 0x13, "STYLE_BOX": 0x14, "VOICE1": 0x19, "VOICE2": 0x1a,
-            "USER_VOICE": 0x1b, "XFADE": 0x1c, "INTRO1": 0x1d, "INTRO2": 0x1e,
-            "INTRO3": 0x1f, "BASSIST": 0x20, "DRUM_MIXER": 0x22, "OCTAVE_UP": 0x24,
-            "OCTAVE_DOWN": 0x25, "USER_STYLE": 0x26, "DSP": 0x27, "ADSR_FILTER": 0x28,
-            "MICRO": 0x29, "ARRA": 0x2c, "ARRB": 0x2d, "ARRC": 0x2e, "ARRD": 0x2f,
-            "FILL": 0x30, "BREAK": 0x31, "JUKE_BOX": 0x32, "STEM": 0x33,
-            "PIANIST": 0x34, "BASS_TO_LOWEST": 0x40, "MANUAL_BASS": 0x41,
-            "PORTAMENTO": 0x48, "HARMONY": 0x49, "PAUSE": 0x4a, "TEMPO_SLOW": 0x4b,
-            "TEMPO_FAST": 0x4c, "START_STOP": 0x4d, "TRANSP_DOWN": 0x59,
-            "TRANSP_UP": 0x5a, "AFTERTOUCH": 0x5e, "EXIT": 0x5f, "ROTOR_SLOW": 0x60,
-            "ROTOR_FAST": 0x61, "PIANO_FAM": 0x62, "ETHNIC_FAM": 0x63,
-            "ORGAN_FAM": 0x64, "GUITAR_FAM": 0x65, "BASS_FAM": 0x66,
-            "STRING_FAM": 0x67, "BRASS_FAM": 0x68, "SAX_FAM": 0x69, "HOLD": 0x6f,
-            "PAD_FAM": 0x70, "SYNTH_FAM": 0x71, "FADEOUT": 0x73, "BASS_TO_ROOT": 0x74,
-            "GM": 0x77
-        }
-
     def _build_cache(self):
         """Build lookup cache at startup"""
         
@@ -364,10 +368,10 @@ class KeyLookupCache:
                     lookup_key = int(mapped_key[0])
                     midi_key = mapped_key[2:]
 
-                    if lookup_key == MIDIType.PEDAL:
-                        midi_value = self.pedal_midis.get(midi_key, 0)
+                    if lookup_key == MIDIType.NOTE:
+                        midi_value = self.note_midis.get(midi_key, 0)
                     else:
-                        midi_value = self.tab_midis.get(midi_key, 0)
+                        midi_value = self.pedal_midis.get(midi_key, 0)
 
                     self.cache[i] = (lookup_key, midi_key, midi_value)
                 except (ValueError, IndexError):
@@ -386,10 +390,10 @@ class KeyLookupCache:
                     lookup_key = int(mapped_key[0])
                     midi_key = mapped_key[2:]
 
-                    if lookup_key == MIDIType.PEDAL:
-                        midi_value = self.pedal_midis.get(midi_key, 0)
+                    if lookup_key == MIDIType.NOTE:
+                        midi_value = self.note_midis.get(midi_key, 0)
                     else:
-                        midi_value = self.tab_midis.get(midi_key, 0)
+                        midi_value = self.pedal_midis.get(midi_key, 0)
 
                     self.cache_shift[i] = (lookup_key, midi_key, midi_value)
                 except (ValueError, IndexError):
@@ -554,7 +558,6 @@ class DisplayManager:
     def show_startup_info(self):
         """Display startup information"""
         self.labels[3].text = self.config.display_sub_banner
-        self.labels[6].text = "KNOB MODE: Rotor"
         # self.labels[9].text = "Version: {}".format(self.config.version)
         self.labels[9].text = "OS: {}".format(self.config.version)
 
@@ -567,7 +570,7 @@ class DisplayManager:
 class StateManager:
     def __init__(self, config):
         self.config = config
-        self.encoder_mode = EncoderMode.ROTOR
+        self.encoder_mode = EncoderMode.TEMPO
         self.encoder_position = 0
         self.encoder_sign = False
         self.rotor_flag = 0  # -1=slow, 0=off, 1=fast
@@ -578,7 +581,6 @@ class StateManager:
         # Timing
         self.tempo_start_time = 0
         self.volume_start_time = 0
-        self.value_start_time = 0
         self.version_start_time = 0
         self.led_start_time = 0
 
@@ -597,8 +599,6 @@ class StateManager:
             self.tempo_start_time = current_time
         elif new_mode == EncoderMode.VOLUME:
             self.volume_start_time = current_time
-        elif new_mode == EncoderMode.VALUE:
-            self.value_start_time = current_time
 
     def check_timeouts(self):
         """Check and handle encoder mode timeouts"""
@@ -618,13 +618,6 @@ class StateManager:
             self.encoder_mode = EncoderMode.ROTOR
             return "timeout_volume"
 
-        # Revert value to rotor after timeout
-        if (self.encoder_mode == EncoderMode.VALUE and
-            self.value_start_time != 0 and
-            current_time - self.value_start_time > self.config.value_timer):
-            self.encoder_mode = EncoderMode.ROTOR
-            return "timeout_value"
-
         # Clear version value after timeout
         if (self.version_start_time != 0 and
             current_time - self.version_start_time > self.config.version_timer):
@@ -640,17 +633,17 @@ class StateManager:
         return None
 
 # --- Main Controller Class ---
-class EVMController:
+class GenosController:
     def __init__(self):
         print("Initializing EVM Controller...")
 
         # Initialize components
-        self.config = EVMConfig()
+        self.config = ControllerConfig()
         self.state = StateManager(self.config)
 
         # Initialize key cache and config
         self.key_cache = KeyLookupCache(self.config)
-        self.config_handler = ConfigFileHandler(self.key_cache, self.config)
+        # self.config_handler = ConfigFileHandler(self.key_cache, self.config)
 
         # Initialize MIDI
         self._init_midi(self.key_cache)
@@ -659,13 +652,13 @@ class EVMController:
         self._init_macropad()
         
         # Load configuration
-        config_loaded = self.config_handler.load_config()
+        # config_loaded = self.config_handler.load_config()
 
         # Initialize display
         self.display = DisplayManager(self.macropad, self.config)
 
-        if not config_loaded:
-            self.display.update_text(9, "Config File Error!")
+        # if not config_loaded:
+        #    self.display.update_text(9, "Config File Error!")
 
         # Initialize pixels
         self._preset_pixels()
@@ -693,22 +686,10 @@ class EVMController:
     def _preset_pixels(self):
         """Set pixel colors based on configuration"""
         for pixel in range(12):
-            if self.config_handler.config_error:
-                self.macropad.pixels[pixel] = Colors.RED
-            elif pixel == self.config.get_key(VARIATION_KEY):  # Variation key
-                if self.state.encoder_mode == EncoderMode.TEMPO:
-                    self.macropad.pixels[pixel] = Colors.YELLOW
-                elif self.state.encoder_mode == EncoderMode.VOLUME:
-                    self.macropad.pixels[pixel] = Colors.PURPLE
-                elif self.state.encoder_mode == EncoderMode.VALUE:
-                    self.macropad.pixels[pixel] = Colors.WHITE
-                else:
-                    self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
+            if (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK):
+                self.macropad.pixels[pixel] = self.key_cache.macropad_color_map_shift[pixel]
             else:
-                if (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK):
-                    self.macropad.pixels[pixel] = self.key_cache.macropad_color_map_shift[pixel]
-                else:
-                    self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
+                self.macropad.pixels[pixel] = self.key_cache.macropad_color_map[pixel]
 
             self.state.lit_keys[pixel] = False
 
@@ -716,30 +697,29 @@ class EVMController:
         """Handle key press events"""
         try:
             key_id = self.config.get_key(key_number)
+
+            print(f"key_number: {key_number}")
+            print(f"key_id: {key_id}")
+
             lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id, self.state.shift_mode)
 
-            # print(f"get_key: {lookup_key}, {midi_key}, {midi_value}")
+            print(f"get_key: {lookup_key}, {midi_key}, {midi_value}")
 
             # Send MIDI command or lookup and sebnd user macro MIDI commands
-            if lookup_key == MIDIType.PEDAL:
+            if lookup_key == MIDIType.NOTE:
+                self.midi_handler.send_note(midi_value)
+                
+            elif lookup_key == MIDIType.PEDAL:
                 self.midi_handler.send_pedal_sysex(midi_value)
                 
-            elif lookup_key == MIDIType.TAB:
-                self.midi_handler.send_tab_sysex(midi_value)
-                
             elif lookup_key == MIDIType.MACRO:
-                self.midi_handler.send_macro_sysex(midi_key)
+                self.midi_handler.send_macro_notes(midi_key)
                 
             else:
                 return midi_key
 
             # Update display
             self.display.update_text(3, "BUTTON: {}".format(midi_key))
-
-            # Handle special cases
-            if midi_key == "Start/Stop":
-                self.state.update_encoder_mode(EncoderMode.TEMPO)
-                self.display.update_text(6, "KNOB MODE: *Tempo")
 
             # Update LEDs
             self._preset_pixels()
@@ -752,48 +732,16 @@ class EVMController:
             print(f"Error: Sending key {key_number} ".format(e))
             return False
             
-    def _handle_encoder_change(self, direction):
-        """Handle encoder rotation"""
-        self.state.encoder_sign = not self.state.encoder_sign
-        current_time = time.time()
-
-        if self.state.encoder_mode == EncoderMode.ROTOR:
-            self._process_rotor(direction)
-        elif self.state.encoder_mode == EncoderMode.TEMPO:
-            self._process_tempo(direction)
-            self.state.tempo_start_time = current_time
-        elif self.state.encoder_mode == EncoderMode.VOLUME:
-            self._process_master_volume(direction)
-            self.state.volume_start_time = current_time
-        elif self.state.encoder_mode == EncoderMode.VALUE:
-            self._process_value(direction)
-            self.state.value_start_time = current_time
-
-    def _process_rotor(self, direction):
-        """Process rotor fast/slow commands"""
-        if direction == 1 and self.state.rotor_flag != 1:
-            midi_value = self.key_cache.tab_midis["ROTOR_FAST"]
-            self.display.update_text(3, "KNOB: Rotor Fast")
-            self.state.rotor_flag = 1
-            self.midi_handler.send_tab_sysex(midi_value)
-        elif direction == -1 and self.state.rotor_flag != -1:
-            midi_value = self.key_cache.tab_midis["ROTOR_SLOW"]
-            self.display.update_text(3, "KNOB: Rotor Slow")
-            self.state.rotor_flag = -1
-            self.midi_handler.send_tab_sysex(midi_value)
-
     def _process_tempo(self, direction):
         """Process tempo up/down commands"""
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
-            midi_value = self.key_cache.pedal_midis["Tempo Up"]
             self.display.update_text(3, "KNOB: Tempo Up{}".format(sign))
         else:
             sign = "-" if self.state.encoder_sign else ""
-            midi_value = self.key_cache.pedal_midis["Tempo Down"]
             self.display.update_text(3, "KNOB: Tempo Down{}".format(sign))
 
-        self.midi_handler.send_pedal_sysex(midi_value)
+        self.midi_handler.send_tempo_sysex(direction)
 
     def _process_master_volume(self, direction):
         """Process volume up/down commands"""
@@ -805,52 +753,35 @@ class EVMController:
 
         self.midi_handler.send_master_volume(direction)
 
-    def _process_value(self, direction):
-        """Process value (DIAL) up/down commands"""
-        sign = "+" if self.state.encoder_sign else ""
-        if direction == 1:
-            midi_value = self.key_cache.tab_midis["DIAL_UP"]
-            self.display.update_text(3, "KNOB: Dial Up{}".format(sign))
-        else:
-            sign = "-" if self.state.encoder_sign else ""
-            midi_value = self.key_cache.tab_midis["DIAL_DOWN"]
-            self.display.update_text(3, "KNOB: Dial Down{}".format(sign))
-
-        self.midi_handler.send_tab_sysex(midi_value)
-
-    def _handle_encoder_switch(self):
-        """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""
-        self.state.encoder_mode = self.state.encoder_mode + 1
-        if self.state.encoder_mode > 2: self.state.encoder_mode = 0
+    def _handle_encoder_change(self, direction):
+        """Handle encoder rotation"""
+        print(f"Encoder Change: {direction}")
+        
+        self.state.encoder_sign = not self.state.encoder_sign
         current_time = time.time()
 
-        if self.state.encoder_mode == EncoderMode.ROTOR:
-            self.display.update_text(3, "KNOB: -")
-            self.display.update_text(6, "KNOB MODE: Rotor")
-        elif self.state.encoder_mode == EncoderMode.TEMPO:
-            self.display.update_text(3, "KNOB: -")
-            self.display.update_text(6, "KNOB MODE: *Tempo")
-            self.state.tempo_start_time = current_time
-        elif self.state.encoder_mode == EncoderMode.VOLUME:
-            self.display.update_text(3, "KNOB: -")
-            self.display.update_text(6, "KNOB MODE: *Volume")
-            self.state.volume_start_time = current_time
-        elif self.state.encoder_mode == EncoderMode.VALUE:
-            self.display.update_text(3, "KNOB: -")
-            self.display.update_text(6, "KNOB MODE: *Dial")
-            self.state.value_start_time = current_time
+        if self.state.encoder_mode == EncoderMode.TEMPO:
+            self._process_tempo(direction)
 
+    def _handle_encoder_switch(self):
+        """Handle encoder switch"""
+        if (self.state.shift_mode == ShiftKeyMode.OFF) or (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
+            self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
+            self.display.update_text(9, "Shift: Active")
+            print("Shift mode: Active Lock")
+        else:
+            self.state.shift_mode = ShiftKeyMode.OFF
+            self.display.update_text(9, "Shift: Off")
+            print("Shift mode: Off")
+
+        key_start_time = time.time()                    
         self._preset_pixels()
-
+        
     def _update_display(self):
         """Update display based on timeouts"""
         timeout_type = self.state.check_timeouts()
 
-        if timeout_type == "timeout_tempo" or timeout_type == "timeout_volume":
-            self.display.update_text(3, "KNOB: -")
-            self.display.update_text(6, "KNOB MODE: Rotor")
-            self._preset_pixels()
-        elif timeout_type == "timeout_version":
+        if timeout_type == "timeout_version":
             self.display.update_text(9, "")
         elif timeout_type == "timeout_led":
             self._preset_pixels()
@@ -888,11 +819,9 @@ class EVMController:
                         # Other non VAR/Shift keys
                         if self.state.shift_mode == ShiftKeyMode.PENDING:
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_SHIFT                        
-                            self.display.update_text(9, "Layer: Shift")
                             print("Shift mode: Active Shift")
                         self._handle_key_press(key_event.key_number)        # Send any key MIDI message
                     key_start_time = time.time()                    
-
 
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
@@ -900,15 +829,15 @@ class EVMController:
                     if key_event.key_number == VARIATION_KEY:
                         if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
-                            self.display.update_text(9, "Layer: Shift Lock")
                             print("Shift mode: Active Lock")
+                            self.display.update_text(9, "Shift: Active")        
                             self._preset_pixels()
 
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
                             self._handle_key_press(key_event.key_number)        # Send VAR MIDI message
                             self.state.shift_mode = ShiftKeyMode.OFF                        
-                            self.display.update_text(9, "")
                             print("Shift mode: Off")
+                            self.display.update_text(9, "")        
                             self._preset_pixels()
                                                 
                     elif key_event.key_number == TUNE_KEY: 
@@ -942,7 +871,7 @@ class EVMController:
 # --- Main Execution ---
 if __name__ == "__main__":
     try:
-        controller = EVMController()
+        controller = GenosController()
         controller.run()
     except Exception as e:
         print("Fatal error: {}".format(e))
