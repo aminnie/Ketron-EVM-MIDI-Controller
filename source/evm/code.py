@@ -245,8 +245,8 @@ class KeyLookupCache:
 
         self.macropad_key_map_shift = [
             "1:VARIATION", "2:VOICEMUTE", "1:TRANSP_DOWN", "0:HALF BAR",
-            "0:FILL & DRUM IN", "1:TRANSP_UP","0:Tempo Form", "2:PLUGGED",
-            "1:OCTAVE_UP", "0:Transpose Form", "0:Arr.Off", "1:OCTAVE_DOWN"
+            "0:FILL & DRUM IN", "1:TRANSP_UP","2:PLUGGED", "2:UNPLUGGED",
+            "1:OCTAVE_UP", "0:Arr.Off", "0:Arr.Off", "1:OCTAVE_DOWN"
         ]
         self.macropad_color_map_shift = [
             Colors.RED, Colors.BLUE, Colors.YELLOW, Colors.PURPLE,
@@ -454,16 +454,23 @@ class ConfigFileHandler:
             return None
 
     def validate_midi_string(self, midi_type, command):
-        """Validate MIDI command against known commands"""
+        """Validate MIDI command against known commands"""    
         if midi_type == MIDIType.PEDAL:
             return command in self.key_cache.pedal_midis
-        else:
+        elif midi_type == MIDIType.TAB:
             return command in self.key_cache.tab_midis
+        elif midi_type == MIDIType.MACRO:
+            for macro in self.key_cache.user_macro_midis:
+                #print(f"Checking command: {command}, {macro}, return {macro.get(command, [])}, type {isinstance(macro.get(command, []), list)}")
+                if command in macro: return True
+                    
+        return False
 
     def load_config(self):
         """Load and validate configuration file"""
-        key_index = 0
-        config_errors = []
+        self.key_index = 0
+        self.shift = False
+        self.config_errors = []
 
         try:
             lines = self.safe_file_read("/keysconfig.txt")
@@ -475,9 +482,11 @@ class ConfigFileHandler:
             print("Config file missing")
             return False
 
+        # Load Layer: Base
         for line_num, line in enumerate(lines, 1):
             parsed = self.parse_config_line(line)
             if parsed is None:
+                # print(f"Skipping line: {line}")
                 continue
 
             try:
@@ -485,32 +494,53 @@ class ConfigFileHandler:
                 if not self.validate_midi_string(parsed['type'], parsed['command']):
                     raise ValueError("Invalid MIDI command: {}".format(parsed['command']))
 
-                mapped_key_index = self.config.get_key(key_index)
+                mapped_key_index = self.config.get_key(self.key_index)
 
                 # Apply configuration
-                midi_string = "{}:{}".format(parsed['type'], parsed['command'])
-                self.key_cache.macropad_key_map[mapped_key_index] = midi_string
+                if self.shift == False :
 
-                # Set color
-                color_code = self.key_cache.validate_color_string(parsed['color'])
-                self.key_cache.macropad_color_map[mapped_key_index] = color_code
+                    # print(f"Base - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
 
-                key_index += 1
-                if key_index >= 12:
-                    break
+                    # Set MIDI string and color for base layer 
+                    midi_string = "{}:{}".format(parsed['type'], parsed['command'])
+                    self.key_cache.macropad_key_map[mapped_key_index] = midi_string
+
+                    # Set color
+                    color_code = self.key_cache.validate_color_string(parsed['color'])
+                    self.key_cache.macropad_color_map[mapped_key_index] = color_code
+
+                elif self.shift == True:
+
+                    # print(f"Shift - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
+
+                    # Set MIDI string and color in shift layer
+                    midi_string = "{}:{}".format(parsed['type'], parsed['command'])
+                    self.key_cache.macropad_key_map_shift[mapped_key_index] = midi_string
+
+                    # Set color
+                    color_code = self.key_cache.validate_color_string(parsed['color'])
+                    self.key_cache.macropad_color_map_shift[mapped_key_index] = color_code
+
+                # Read all 24 keys in the Base and Shift Layers. resetting the key index to start with shift layer
+                self.key_index += 1
+                if (self.key_index > 11) and (self.shift == False):
+                    self.key_index = 0
+                    self.shift = True
 
             except Exception as e:
-                config_errors.append("Line {}: {}".format(line_num, e))
+                self.config_errors.append("Line {}: {}".format(line_num, e))
 
-        if config_errors:
+        if self.config_errors:
             print("Configuration errors:")
-            for error in config_errors[:5]:  # Limit error display
+            for error in self.config_errors[:5]:  # Limit error display
                 print("  {}".format(error))
             self.config_error = True
             return False
 
         # Rebuild cache with new configuration
         self.key_cache._build_cache()
+        
+        print("Config file processed.")
         return True
 
 # --- Display Manager ---
@@ -675,7 +705,6 @@ class EVMController:
     def _init_midi(self, key_cache):
         """Initialize MIDI connections"""        
         print("Preparing Macropad Midi")
-        print(usb_midi.ports)
 
         midi = adafruit_midi.MIDI(
             midi_in=usb_midi.ports[0], in_channel=0,
@@ -683,6 +712,7 @@ class EVMController:
         )
 
         self.midi_handler = MIDIHandler(midi, key_cache)
+
 
     def _init_macropad(self):
         """Initialize MacroPad hardware"""
@@ -879,7 +909,7 @@ class EVMController:
                 if key_event and key_event.pressed:                    
                     if key_event.key_number == VARIATION_KEY:
                         self.state.shift_mode = ShiftKeyMode.PENDING
-                        print("Shift mode: Pending")
+                        # print("Shift mode: Pending")
                         
                         self.state.lit_keys[key_event.key_number] = True
                         self.state.led_start_time = time.time()
@@ -889,7 +919,7 @@ class EVMController:
                         if self.state.shift_mode == ShiftKeyMode.PENDING:
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_SHIFT                        
                             self.display.update_text(9, "Layer: Shift")
-                            print("Shift mode: Active Shift")
+                            # print("Shift mode: Active Shift")
                         self._handle_key_press(key_event.key_number)        # Send any key MIDI message
                     key_start_time = time.time()                    
 
@@ -901,14 +931,14 @@ class EVMController:
                         if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
                             self.display.update_text(9, "Layer: Shift Lock")
-                            print("Shift mode: Active Lock")
+                            # print("Shift mode: Active Lock")
                             self._preset_pixels()
 
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
                             self._handle_key_press(key_event.key_number)        # Send VAR MIDI message
                             self.state.shift_mode = ShiftKeyMode.OFF                        
                             self.display.update_text(9, "")
-                            print("Shift mode: Off")
+                            # print("Shift mode: Off")
                             self._preset_pixels()
                                                 
                     elif key_event.key_number == TUNE_KEY: 

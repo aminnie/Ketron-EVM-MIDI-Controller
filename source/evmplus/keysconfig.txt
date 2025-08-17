@@ -5,7 +5,8 @@
 # Make a copy of the original keyconfig.txt file before modifying this file in case you need to revert back.
 # Color code keys with one of the following: red, green, blue, yellow, purple, orange, or white
 # Select a supported SysEx message from the Pedal or Tabs list linked to below only.
-# Link to supported Pedal and Tab Midi Mappings: Add link
+# Link to supported Pedal and Tab Midi Mappings: https://shop.ketron.it/images/ketron/manualiPdf/EventX/EVENT%20SYSEX-NRPN.pdf
+# Layer Base
 key00=1:VARIATION:blue
 key01=0:Arr.A:blue
 key02=0:Intro/End1:green
@@ -16,5 +17,18 @@ key06=1:BREAK:orange
 key07=0:Arr.C:blue
 key08=0:Intro/End3:green
 key09=0:Start/Stop:red
-key10=0:Arr.D:blue
-key11=0:To End:red
+key0A=0:Arr.D:blue
+key0B=0:To End:red
+# Layer: Shift
+key10=1:VARIATION:blue
+key11=2:VOICEMUTE:red
+key12=1:TRANSP_DOWN:yellow
+key13=0:HALF BAR:purple
+key14=0:FILL & DRUM IN:green
+key15=1:TRANSP_UP:yellow
+key16=2:PLUGGED:orange
+key17=2:UNPLUGGED:orange
+key18=1:OCTAVE_UP:teal
+key19=0:Arr.Off:red
+key1A=0:Arr.Off:red
+key1B=1:OCTAVE_DOWN:teal

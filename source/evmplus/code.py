@@ -439,13 +439,20 @@ class ConfigFileHandler:
         """Validate MIDI command against known commands"""    
         if midi_type == MIDIType.PEDAL:
             return command in self.key_cache.pedal_midis
-        else:
+        elif midi_type == MIDIType.TAB:
             return command in self.key_cache.tab_midis
+        elif midi_type == MIDIType.MACRO:
+            for macro in self.key_cache.user_macro_midis:
+                #print(f"Checking command: {command}, {macro}, return {macro.get(command, [])}, type {isinstance(macro.get(command, []), list)}")
+                if command in macro: return True
+                    
+        return False
 
     def load_config(self):
-        """Load and validate configuration file"""        
-        key_index = 0
-        config_errors = []
+        """Load and validate configuration file"""
+        self.key_index = 0
+        self.shift = False
+        self.config_errors = []
 
         try:
             lines = self.safe_file_read("/keysconfig.txt")
@@ -457,9 +464,11 @@ class ConfigFileHandler:
             print("Config file missing")
             return False
 
+        # Load Layer: Base
         for line_num, line in enumerate(lines, 1):
             parsed = self.parse_config_line(line)
             if parsed is None:
+                # print(f"Skipping line: {line}")
                 continue
 
             try:
@@ -467,32 +476,53 @@ class ConfigFileHandler:
                 if not self.validate_midi_string(parsed['type'], parsed['command']):
                     raise ValueError("Invalid MIDI command: {}".format(parsed['command']))
 
-                mapped_key_index = self.config.get_key(key_index)
+                mapped_key_index = self.config.get_key(self.key_index)
 
                 # Apply configuration
-                midi_string = "{}:{}".format(parsed['type'], parsed['command'])
-                self.key_cache.macropad_key_map[mapped_key_index] = midi_string
+                if self.shift == False :
 
-                # Set color
-                color_code = self.key_cache.validate_color_string(parsed['color'])
-                self.key_cache.macropad_color_map[mapped_key_index] = color_code
+                    # print(f"Base - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
 
-                key_index += 1
-                if key_index >= 12:
-                    break
+                    # Set MIDI string and color for base layer 
+                    midi_string = "{}:{}".format(parsed['type'], parsed['command'])
+                    self.key_cache.macropad_key_map[mapped_key_index] = midi_string
+
+                    # Set color
+                    color_code = self.key_cache.validate_color_string(parsed['color'])
+                    self.key_cache.macropad_color_map[mapped_key_index] = color_code
+
+                elif self.shift == True:
+
+                    # print(f"Shift - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
+
+                    # Set MIDI string and color in shift layer
+                    midi_string = "{}:{}".format(parsed['type'], parsed['command'])
+                    self.key_cache.macropad_key_map_shift[mapped_key_index] = midi_string
+
+                    # Set color
+                    color_code = self.key_cache.validate_color_string(parsed['color'])
+                    self.key_cache.macropad_color_map_shift[mapped_key_index] = color_code
+
+                # Read all 24 keys in the Base and Shift Layers. resetting the key index to start with shift layer
+                self.key_index += 1
+                if (self.key_index > 11) and (self.shift == False):
+                    self.key_index = 0
+                    self.shift = True
 
             except Exception as e:
-                config_errors.append("Line {}: {}".format(line_num, e))
+                self.config_errors.append("Line {}: {}".format(line_num, e))
 
-        if config_errors:
+        if self.config_errors:
             print("Configuration errors:")
-            for error in config_errors[:5]:  # Limit error display
+            for error in self.config_errors[:5]:  # Limit error display
                 print("  {}".format(error))
             self.config_error = True
             return False
 
         # Rebuild cache with new configuration
         self.key_cache._build_cache()
+        
+        print("Config file processed.")
         return True
 
 # --- Display Manager ---
