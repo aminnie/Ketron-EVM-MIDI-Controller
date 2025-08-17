@@ -250,7 +250,7 @@ class KeyLookupCache:
         self.cache = {}
 
         # Initialize MacroPad key & color mappings to default MIDI message values
-        # USB drive keysconfig.txt file will override if present
+        # USB drive keymap.cfg file will override if present
         self.macropad_key_map = [
             "1:VARIATION", "0:Arr.A", "0:Intro/End1", "0:Fill",
             "0:Arr.B", "0:Intro/End2","0:Break", "0:Arr.C",
@@ -455,7 +455,7 @@ class ConfigFileHandler:
         self.config_errors = []
 
         try:
-            lines = self.safe_file_read("/keysconfig.txt")
+            lines = self.safe_file_read("/keymap.cfg")
             if not lines:
                 self.config_error = True
                 print("Using default Config")
