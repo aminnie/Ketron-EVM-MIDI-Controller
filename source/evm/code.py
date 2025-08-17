@@ -245,13 +245,13 @@ class KeyLookupCache:
 
         self.macropad_key_map_shift = [
             "1:VARIATION", "2:VOICEMUTE", "1:TRANSP_DOWN", "0:HALF BAR",
-            "0:FILL & DRUM IN", "1:TRANSP_UP","2:PLUGGED", "2:UNPLUGGED",
-            "1:OCTAVE_UP", "0:Arr.Off", "0:Arr.Off", "1:OCTAVE_DOWN"
+            "0:FILL & DRUM IN", "1:TRANSP_UP", "0:Arr.Off", "2:UNPLUGGED",
+            "1:OCTAVE_DOWN", "0:Arr.Off", "2:PLUGGED", "1:OCTAVE_UP"
         ]
         self.macropad_color_map_shift = [
             Colors.RED, Colors.BLUE, Colors.YELLOW, Colors.PURPLE,
-            Colors.GREEN, Colors.YELLOW, Colors.ORANGE, Colors.GREEN,
-            Colors.TEAL, Colors.PURPLE, Colors.RED, Colors.TEAL
+            Colors.GREEN, Colors.YELLOW, Colors.RED, Colors.ORANGE,
+            Colors.TEAL, Colors.RED, Colors.ORANGE, Colors.TEAL
         ]
 
         self.user_macro_midis = [
