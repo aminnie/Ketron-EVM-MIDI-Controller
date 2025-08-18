@@ -244,9 +244,9 @@ class KeyLookupCache:
         ]
 
         self.macropad_key_map_shift = [
-            "1:VARIATION", "2:VOICEMUTE", "1:TRANSP_DOWN", "0:HALF BAR",
+            "1:VARIATION", "0:Low. Mute", "1:TRANSP_DOWN", "0:HALF BAR",
             "0:FILL & DRUM IN", "1:TRANSP_UP", "0:Arr.Off", "2:UNPLUGGED",
-            "1:OCTAVE_DOWN", "0:Arr.Off", "2:PLUGGED", "1:OCTAVE_UP"
+            "1:OCTAVE_DOWN", "0:Start/Stop", "2:PLUGGED", "1:OCTAVE_UP"
         ]
         self.macropad_color_map_shift = [
             Colors.RED, Colors.BLUE, Colors.YELLOW, Colors.PURPLE,
@@ -258,7 +258,7 @@ class KeyLookupCache:
             {
                 "PLUGGED": ["Bass & Drum"],
                 "UNPLUGGED": ["Drum Mute", "Bass Mute"],
-                "VOICEMUTE": [ "Bass Mute", "Low. Mute", "Lead Mute"]
+                "VOICEMUTE": ["Bass Mute", "Low. Mute", "Lead Mute"]
             }
         ]
 
@@ -766,10 +766,13 @@ class EVMController:
             # Update display
             self.display.update_text(3, "BUTTON: {}".format(midi_key))
 
-            # Handle special cases
+            # Handle special cases: Default encoder to tempo, 
+            # and clearing config read and red LED errors
             if midi_key == "Start/Stop":
                 self.state.update_encoder_mode(EncoderMode.TEMPO)
                 self.display.update_text(6, "KNOB MODE: *Tempo")
+                
+                self.config_handler.config_error = False
 
             # Update LEDs
             self._preset_pixels()
