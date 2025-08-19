@@ -495,8 +495,6 @@ class ConfigFileHandler:
 
         if midi_type == MIDIType.NOTE:
             return command in self.key_cache.note_midis
-        elif:
-            return command in self.key_cache.section_midis
         elif midi_type == MIDIType.MACRO:
             for macro in self.key_cache.user_macro_midis:
                 #print(f"Checking command: {command}, {macro}, return {macro.get(command, [])}, type {isinstance(macro.get(command, []), list)}")
