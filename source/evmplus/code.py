@@ -59,6 +59,23 @@ class EFXLevel:
     RealChord = 0x08
     LeftGM = 0x3F
 
+# Manage Control Panel Volume Sliders via midi CC
+class SliderCC:
+    PLAYER_SLIDER = 0x66   #CC 102
+    STYLE_SLIDER = 0x67
+    DRUM_SLIDER = 0x68
+    BASS_SLIDER = 0x69
+    CHORD_SLIDER = 0x6A
+    REALCHORD_SLIDER = 0x6B
+    LOWERS_SLIDER = 0x6C
+    USER2_SLIDER = 0x6D
+    USER3_SLIDER = 0x6E
+    VOICE1_SLIDER = 0x72     #CC 114
+    VOICE2_SLIDER = 0x73
+    DRAWBARS_SLIDER = 0x74
+    MICRO1_SLIDER = 0x75
+    VOCAL_SLIDER = 0x76
+
 class Colors:
     WHITE = 0x606060
     BLUE = 0x000020
@@ -90,9 +107,9 @@ TUNE_KEY = 11
 # --- Configuration Class ---
 class EVMConfig:
     def __init__(self):
-        self.display_banner =     "     Ketron EVM      "
+        self.display_banner =     "   Ketron EVM Plus   "
         self.display_sub_banner = "Arranger Controller "
-        self.version = "1.1"
+        self.version = "1.2"
         #self.display_banner =     "    AJAMSONIC HS13   "
         #self.display_sub_banner = "Pad Controller   "
         #self.version = "5.1"
@@ -218,9 +235,17 @@ class MIDIHandler:
             return False
 
     def send_quad_volume(self, midi_channel, volume):
-        """Send volume CC for Quad Encoder configured channels"""
+        """Send volume CC for Quad Encoder on special EVM CCs"""
         try:
             self.midi.send(ControlChange(11, volume), midi_channel)
+        except Exception as e:
+            print("Error sending volume: {}".format(e))
+            return False        
+
+    def send_quad_cc_volume(self, ccCode, volume, midi_channel):
+        """Send volume CC for Quad Encoder configured channels"""
+        try:
+            self.midi.send(ControlChange(ccCode, volume), midi_channel)
         except Exception as e:
             print("Error sending volume: {}".format(e))
             return False        
@@ -630,6 +655,9 @@ class DisplayManager:
 class StateManager:
     def __init__(self, config):
         self.config = config
+        
+        self.midi_out_channel = 15
+        
         self.encoder_mode = EncoderMode.ROTOR
         self.encoder_position = 0
         self.encoder_sign = False
@@ -655,6 +683,7 @@ class StateManager:
         self.is_quadencoder = False
         
         self.quad_volumes = [0, 0, 0, 0]
+        self.quad_volumes_shift = [0, 0, 0, 0]
 
     def update_encoder_mode(self, new_mode):
         """Update encoder mode with timed reset"""
@@ -754,7 +783,7 @@ class EVMController:
 
         midi = adafruit_midi.MIDI(
             midi_in=usb_midi.ports[0], in_channel=0,
-            midi_out=usb_midi.ports[1], out_channel=15
+            midi_out=usb_midi.ports[1], out_channel=self.state.midi_out_channel
         )
 
         self.midi_handler = MIDIHandler(midi, key_cache)
@@ -788,13 +817,13 @@ class EVMController:
             self.quad_pixels.brightness = 0.5
 
             self.quad_last_positions = [-1, -1, -1, -1]
+            self.quad_last_positions_shift = [-1, -1, -1, -1]
             self.quad_colors = [0, 0, 0, 0]  # Start at red (muted)
+            self.quad_colors_shift = [0, 0, 0, 0]
             
             # Re-initialize the encoder last position tracked by reading the current state
             # No MIDI message sent since we do not know if the EVM is online yet
-            positions = [encoder.position for encoder in self.quad_encoders]
-            for n, rotary_pos in enumerate(positions):
-                self.quad_last_positions[n] = rotary_pos
+            self.preset_quad_positions()
 
             print("Quad Encoders configured")
             return True
@@ -943,18 +972,39 @@ class EVMController:
         #    self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
         #    self.midi_handler.send_quad_volume(midi_channel, volume)
 
-        if encoder_number == 0:
-            self.display.update_text(9, f"QUAD Upper1 Vol:{volume}")
-            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice2, volume)
-        elif encoder_number == 1:
-            self.display.update_text(9, f"QUAD Upper2 Vol:{volume}")
-            self.midi_handler.send_efxlevel_sysex(EFXLevel.Voice1, volume)
+        ###
+        if encoder_number == 3:
+            if self.state.shift_mode == ShiftKeyMode.OFF:
+                self.display.update_text(9, f"QUAD Lower Vol:{volume}")
+                ccCode = SliderCC.LOWERS_SLIDER
+            else:
+                self.display.update_text(9, f"QUAD Style Vol:{volume}")
+                ccCode = SliderCC.STYLE_SLIDER
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 2:
-            self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
-            self.midi_handler.send_efxlevel_sysex(EFXLevel.RealChord, volume)
-        elif encoder_number == 3:
-            self.display.update_text(9, f"QUAD Left/GM Vol:{volume}")
-            self.midi_handler.send_efxlevel_sysex(EFXLevel.LeftGM, volume)
+            if self.state.shift_mode == ShiftKeyMode.OFF:
+                self.display.update_text(9, f"QUAD Voice1 Vol:{volume}")
+                ccCode = SliderCC.VOICE1_SLIDER
+            else:
+                self.display.update_text(9, f"QUAD Drum Vol:{volume}")
+                ccCode = SliderCC.DRUM_SLIDER
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+        elif encoder_number == 1:
+            if self.state.shift_mode == ShiftKeyMode.OFF:
+                self.display.update_text(9, f"QUAD Voice2 Vol:{volume}")
+                ccCode = SliderCC.VOICE2_SLIDER
+            else:
+                self.display.update_text(9, f"QUAD Chord Vol:{volume}")
+                ccCode = SliderCC.CHORD_SLIDER
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+        elif encoder_number == 0:
+            if self.state.shift_mode == ShiftKeyMode.OFF:
+                self.display.update_text(9, f"QUAD DrawBar Vol:{volume}")
+                ccCode = SliderCC.DRAWBARS_SLIDER
+            else:
+                self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
+                ccCode = SliderCC.REALCHORD_SLIDER
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
 
     def _handle_encoder_switch(self):
         """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""
@@ -980,6 +1030,17 @@ class EVMController:
 
         self._preset_pixels()
 
+    def preset_quad_positions(self):
+        """Preset the encoder position tracking on each shift layer state change to prevent unintended triggers"""
+
+        #  Read current position and preset
+        positions = [encoder.position for encoder in self.quad_encoders]
+        for n, rotary_pos in enumerate(positions):
+            self.quad_last_positions[n] = rotary_pos
+            self.quad_last_positions_shift[n] = rotary_pos
+            
+        print("Preset quad positions triggered")
+            
     def _handle_quadencoder(self):
         """Handle quad encoder rotary encoders and switchs press."""
         
@@ -987,36 +1048,72 @@ class EVMController:
         positions = [encoder.position for encoder in self.quad_encoders]
 
         for n, rotary_pos in enumerate(positions):
-            if rotary_pos != self.quad_last_positions[n]:
-                
-                # If switch not pressed, update volume for encoders 
-                if self.quad_switches[n].value:  
-                    # Update channel volume with new encoder position 
-                    if rotary_pos > self.quad_last_positions[n]: 
-                        self.state.quad_volumes[n] += 8        # Advance forward
-                        if self.state.quad_volumes[n] >= 127: self.state.quad_volumes[n] = 127
-                        self._process_quad_volume(n, self.state.quad_volumes[n])
-                    elif rotary_pos < self.quad_last_positions[n]:
-                        self.state.quad_volumes[n] -= 8        # Advance backward
-                        if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
-                        self._process_quad_volume(n, self.state.quad_volumes[n])
-                    #print(f"Encoder {n} value {self.state.quad_volumes[n]}")
-                                        
-                    # Change the LED colors
-                    # if rotary_pos > self.quad_last_positions[n]:  # Advance forward through the colorwheel.
-                    #    self.quad_colors[n] += 8
-                    # else:
-                    #    self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
-                    #self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
-                                
-                # Set last position to current position after evaluating
-                self.quad_last_positions[n] = rotary_pos
+            
+            # Use Shift Lock or Shift Normal lists to adjust valyes
+            if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
+                if rotary_pos != self.quad_last_positions_shift[n]:
+                    
+                    # If switch not pressed, update volume for encoders 
+                    if self.quad_switches[n].value:  
+                        # Update channel volume with new encoder position 
+                        if rotary_pos > self.quad_last_positions_shift[n]: 
+                            self.state.quad_volumes_shift[n] += 8        # Advance forward
+                            if self.state.quad_volumes_shift[n] >= 120: self.state.quad_volumes_shift[n] = 120
+                            self._process_quad_volume(n, self.state.quad_volumes_shift[n])
+                        elif rotary_pos < self.quad_last_positions_shift[n]:
+                            self.state.quad_volumes_shift[n] -= 8        # Advance backward
+                            if self.state.quad_volumes_shift[n] <= 0: self.state.quad_volumes_shift[n] = 0
+                            self._process_quad_volume(n, self.state.quad_volumes_shift[n])
+                        #print(f"Encoder {n} value {self.state.quad_volumes[n]}")
+                                            
+                        # Change the LED colors
+                        # if rotary_pos > self.quad_last_positions_shift[n]:  # Advance forward through the colorwheel.
+                        #    self.quad_colors[n] += 8
+                        # else:
+                        #    self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
+                        #self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
+                                    
+                    # Set last position to current position after evaluating
+                    self.quad_last_positions_shift[n] = rotary_pos
 
-            # if switch is pressed, light up white, otherwise use the stored color
-            #if not self.quad_switches[n].value:
-            #    self.quad_pixels[n] = 0xFFFFFF
-            #else:
-            #    self.quad_pixels[n] = colorwheel(self.quad_colors[n])
+                # if switch is pressed, light up white, otherwise use the stored color
+                #if not self.quad_switches[n].value:
+                #    self.quad_pixels[n] = 0xFFFFFF
+                #else:
+                #    self.quad_pixels[n] = colorwheel(self.quad_colors[n])
+                        
+            elif self.state.shift_mode == ShiftKeyMode.OFF:
+                if rotary_pos != self.quad_last_positions[n]:
+                    
+                    # If switch not pressed, update volume for encoders 
+                    if self.quad_switches[n].value:  
+                        # Update channel volume with new encoder position 
+                        if rotary_pos > self.quad_last_positions[n]: 
+                            self.state.quad_volumes[n] += 8        # Advance forward
+                            if self.state.quad_volumes[n] >= 120: self.state.quad_volumes[n] = 120
+                            self._process_quad_volume(n, self.state.quad_volumes[n])
+                        elif rotary_pos < self.quad_last_positions[n]:
+                            self.state.quad_volumes[n] -= 8        # Advance backward
+                            if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
+                            self._process_quad_volume(n, self.state.quad_volumes[n])
+                        #print(f"Encoder {n} value {self.state.quad_volumes[n]}")
+                                            
+                        # Change the LED colors
+                        # if rotary_pos > self.quad_last_positions[n]:  # Advance forward through the colorwheel.
+                        #    self.quad_colors[n] += 8
+                        # else:
+                        #    self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
+                        #self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
+                                    
+                    # Set last position to current position after evaluating
+                    self.quad_last_positions[n] = rotary_pos
+
+                # if switch is pressed, light up white, otherwise use the stored color
+                #if not self.quad_switches[n].value:
+                #    self.quad_pixels[n] = 0xFFFFFF
+                #else:
+                #    self.quad_pixels[n] = colorwheel(self.quad_colors[n])
+
 
     def _update_display(self):
         """Update display based on timeouts"""
@@ -1067,8 +1164,8 @@ class EVMController:
                             self.display.update_text(9, "Layer: Shift")
                             # print("Shift mode: Active Shift")
                         self._handle_key_press(key_event.key_number)        # Send any key MIDI message
-                    key_start_time = time.time()                    
-
+                    key_start_time = time.time()
+                    continue
 
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
@@ -1077,15 +1174,17 @@ class EVMController:
                         if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
                             self.display.update_text(9, "Layer: Shift Lock")
-                            # print("Shift mode: Active Lock")
                             self._preset_pixels()
+                            self.preset_quad_positions()
+                            # print("Shift mode: Active Lock")
 
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
                             self._handle_key_press(key_event.key_number)        # Send VAR MIDI message
                             self.state.shift_mode = ShiftKeyMode.OFF                        
                             self.display.update_text(9, "")
-                            # print("Shift mode: Off")
                             self._preset_pixels()
+                            self.preset_quad_positions()
+                            # print("Shift mode: Off")
                                                 
                     elif key_event.key_number == TUNE_KEY: 
                         if (time.time() - key_start_time) > key_hold_timer:
@@ -1093,6 +1192,7 @@ class EVMController:
                             self.display.update_text(9, "CHN #5: Test Tune")
                             self.midi_handler.test_connectivity()
                             self.display.update_text(9, "")        
+                    continue
                             
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
