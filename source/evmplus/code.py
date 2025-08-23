@@ -965,14 +965,6 @@ class EVMController:
 
     def _process_quad_volume(self, encoder_number, volume):
         """Process Quad Encoder Volumes"""
-        # Lookup channel for the quad encoder number before sending
-        #midi_channel = 0
-        #if encoder_number == 0:            
-        #    midi_channel = self.state.chan_drawbar
-        #    self.display.update_text(9, f"QUAD Drawbar Vol:{volume}")
-        #    self.midi_handler.send_quad_volume(midi_channel, volume)
-
-        ###
         if encoder_number == 3:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"QUAD Lower Vol:{volume}")
@@ -1038,15 +1030,15 @@ class EVMController:
         for n, rotary_pos in enumerate(positions):
             self.quad_last_positions[n] = rotary_pos
             self.quad_last_positions_shift[n] = rotary_pos
-            
-        print("Preset quad positions triggered")
-            
+                        
     def _handle_quadencoder(self):
         """Handle quad encoder rotary encoders and switchs press."""
+
+        encoder_step = 8
         
         # Negate the position to make clockwise rotation positive
         positions = [encoder.position for encoder in self.quad_encoders]
-
+        
         for n, rotary_pos in enumerate(positions):
             
             # Use Shift Lock or Shift Normal lists to adjust valyes
@@ -1056,31 +1048,24 @@ class EVMController:
                     # If switch not pressed, update volume for encoders 
                     if self.quad_switches[n].value:  
                         # Update channel volume with new encoder position 
-                        if rotary_pos > self.quad_last_positions_shift[n]: 
-                            self.state.quad_volumes_shift[n] += 8        # Advance forward
-                            if self.state.quad_volumes_shift[n] >= 120: self.state.quad_volumes_shift[n] = 120
+                        if rotary_pos > self.quad_last_positions_shift[n]:      # Advance forward
+                            self.state.quad_volumes_shift[n] += encoder_step
+                            if self.state.quad_volumes_shift[n] > 127: self.state.quad_volumes_shift[n] = 127
+                                
                             self._process_quad_volume(n, self.state.quad_volumes_shift[n])
-                        elif rotary_pos < self.quad_last_positions_shift[n]:
-                            self.state.quad_volumes_shift[n] -= 8        # Advance backward
+                            
+                        elif rotary_pos < self.quad_last_positions_shift[n]:    # Advance backward
+                            if self.state.quad_volumes_shift[n] == 127:
+                                self.state.quad_volumes_shift[n] -= encoder_step - 1                                
+                            else:
+                                self.state.quad_volumes_shift[n] -= encoder_step
+                                
                             if self.state.quad_volumes_shift[n] <= 0: self.state.quad_volumes_shift[n] = 0
+                            
                             self._process_quad_volume(n, self.state.quad_volumes_shift[n])
-                        #print(f"Encoder {n} value {self.state.quad_volumes[n]}")
-                                            
-                        # Change the LED colors
-                        # if rotary_pos > self.quad_last_positions_shift[n]:  # Advance forward through the colorwheel.
-                        #    self.quad_colors[n] += 8
-                        # else:
-                        #    self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
-                        #self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
-                                    
+                                                                                
                     # Set last position to current position after evaluating
                     self.quad_last_positions_shift[n] = rotary_pos
-
-                # if switch is pressed, light up white, otherwise use the stored color
-                #if not self.quad_switches[n].value:
-                #    self.quad_pixels[n] = 0xFFFFFF
-                #else:
-                #    self.quad_pixels[n] = colorwheel(self.quad_colors[n])
                         
             elif self.state.shift_mode == ShiftKeyMode.OFF:
                 if rotary_pos != self.quad_last_positions[n]:
@@ -1088,31 +1073,24 @@ class EVMController:
                     # If switch not pressed, update volume for encoders 
                     if self.quad_switches[n].value:  
                         # Update channel volume with new encoder position 
-                        if rotary_pos > self.quad_last_positions[n]: 
-                            self.state.quad_volumes[n] += 8        # Advance forward
-                            if self.state.quad_volumes[n] >= 120: self.state.quad_volumes[n] = 120
+                        if rotary_pos > self.quad_last_positions[n]:        # Advance forward
+                            self.state.quad_volumes[n] += encoder_step
+                            if self.state.quad_volumes[n] >= 127: self.state.quad_volumes[n] = 127
+
                             self._process_quad_volume(n, self.state.quad_volumes[n])
-                        elif rotary_pos < self.quad_last_positions[n]:
-                            self.state.quad_volumes[n] -= 8        # Advance backward
+
+                        elif rotary_pos < self.quad_last_positions[n]:      # Advance backward
+                            if self.state.quad_volumes[n] == 127:
+                                self.state.quad_volumes[n] -= encoder_step - 1                                
+                            else:
+                                self.state.quad_volumes[n] -= encoder_step
+
                             if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
+
                             self._process_quad_volume(n, self.state.quad_volumes[n])
-                        #print(f"Encoder {n} value {self.state.quad_volumes[n]}")
-                                            
-                        # Change the LED colors
-                        # if rotary_pos > self.quad_last_positions[n]:  # Advance forward through the colorwheel.
-                        #    self.quad_colors[n] += 8
-                        # else:
-                        #    self.quad_colors[n] -= 8  # Advance backward through the colorwheel.
-                        #self.quad_colors[n] = (self.quad_colors[n] + 256) % 256  # wrap around to 0-256
                                     
                     # Set last position to current position after evaluating
                     self.quad_last_positions[n] = rotary_pos
-
-                # if switch is pressed, light up white, otherwise use the stored color
-                #if not self.quad_switches[n].value:
-                #    self.quad_pixels[n] = 0xFFFFFF
-                #else:
-                #    self.quad_pixels[n] = colorwheel(self.quad_colors[n])
 
 
     def _update_display(self):
