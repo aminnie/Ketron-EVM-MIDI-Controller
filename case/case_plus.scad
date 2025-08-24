@@ -12,7 +12,7 @@
 // PARAMETERS
 // =============================================================================
 
-// Overall cover dimensions addinh Quad Encoder
+// Overall cover dimensions of added Quad Encoder
 qencoder_width = 25;      // Width of Quad Encoder (mm)
 
 // Adafruit Macropad RP2040 PCB parameters
@@ -93,13 +93,6 @@ difference() {
 }
 
 // Add cover supports into the case hole
-// Corners
-translate([-5, pcb_width/2-2, 0])   // y top center
-    cube([10,3,12]);
-translate([pcb_length/2-2, -10, 0])   // x center 
-    cube([3, 8, 12]);
-translate([-pcb_length/2-2, -5, 0])   // x center 
-    cube([3, 8, 12]);
 translate([pcb_length/2-4, pcb_width/2-2, 0])   // x and y top
     cube([5, 3, 12]);
 translate([-(pcb_length/2+1), pcb_width/2-2, 0])    // -x and y top
@@ -108,10 +101,15 @@ translate([pcb_length/2-4, -(pcb_width/2+1), 0])    // x and -y bottom
     cube([5, 3, 12]);
 // Encoder Support
 translate([-(pcb_length/2+1), -(pcb_width/2+1), 0]) // -x and -y bottom
-    cube([10,3,12 - 3.2]);
+    cube([10, 3, 12 - 3.2]);
 translate([10, -(pcb_width/2+1), 0])
-    cube([10,3,12 - 3.2]);
-
+    cube([10, 3, 12 - 3.2]);
+translate([-5, pcb_width/2-2, 0])   // y top center
+    cube([10, 3, 12]);
+translate([pcb_length/2-2, -pcb_width/2 + 2, 0])   // x center 
+    cube([3, 10, 12]);
+translate([-pcb_length/2, -pcb_width/2 + 1, 0])   // quad center 
+    cube([3, 10, 12 - 3.2]);
 // =============================================================================
 // MODULES (Functions)
 // =============================================================================
