@@ -40,16 +40,16 @@ top_cover_lip = 1;         // How much top cover overlaps case walls (mm)
 usb_width = 11;             // Width of USB-C port (mm)
 usb_height = 5;            // ** Was 4 - Height of USB-C port (mm)
 usb_offset_from_edge = 3;  // Distance from PCB edge to USB center (mm)
-usb_position_y = 0 + qencoder_width/2;    // Y position along case width (0 = center)
+usb_position_y = qencoder_width/2 - 3.2; // Y position along case width (0 = center)
 usb_corner_radius = 1;     // Rounded corners for USB hole
 
 // PCB mounting holes keep 2mm for wall in mind
 mount_hole_diameter = 4.56;   // Diameter for M3 screws (mm)
 mount_hole_positions = [   // [X, Y] positions relative to PCB center
-    [-pcb_length/2 + 19, -26.5 + qencoder_width/2],   // Bottom left
-    [pcb_length/2 - 4, -26.5 + qencoder_width/2],   // Bottom right  
-    [-pcb_length/2 + 19, 26.5 + qencoder_width/2],    // Top left
-    [pcb_length/2 - 4, 26.5 + qencoder_width/2]     // Top right
+    [-pcb_length/2 + 19, -26.5 + qencoder_width/2 - 3.5],   // Bottom left
+    [pcb_length/2 - 4, -26.5 + qencoder_width/2 - 3.5],   // Bottom right  
+    [-pcb_length/2 + 19, 26.5 + qencoder_width/2 - 3.5],    // Top left
+    [pcb_length/2 - 4, 26.5 + qencoder_width/2 - 3.5]     // Top right
 ];
 
 // Standoffs for PCB mounting
@@ -70,6 +70,7 @@ cover_lip_indent = [10, 2.5, 2];
 // =============================================================================
 
 difference() {
+
     union() {
         // Main case body
         case_body();
@@ -80,7 +81,7 @@ difference() {
 
     // Remove internal cavity
     internal_cavity();
-
+        
     // Remove USB port hole
     usb_port_hole();
     
@@ -91,8 +92,25 @@ difference() {
     pcb_mounting_holes();
 }
 
-// Optional: Show PCB position for reference (comment out for final print)
-// %pcb_reference();
+// Add cover supports into the case hole
+// Corners
+translate([-5, pcb_width/2-2, 0])   // y top center
+    cube([10,3,12]);
+translate([pcb_length/2-2, -10, 0])   // x center 
+    cube([3, 8, 12]);
+translate([-pcb_length/2-2, -5, 0])   // x center 
+    cube([3, 8, 12]);
+translate([pcb_length/2-4, pcb_width/2-2, 0])   // x and y top
+    cube([5, 3, 12]);
+translate([-(pcb_length/2+1), pcb_width/2-2, 0])    // -x and y top
+    cube([5, 3, 12]);
+translate([pcb_length/2-4, -(pcb_width/2+1), 0])    // x and -y bottom
+    cube([5, 3, 12]);
+// Encoder Support
+translate([-(pcb_length/2+1), -(pcb_width/2+1), 0]) // -x and -y bottom
+    cube([10,3,12 - 3.2]);
+translate([10, -(pcb_width/2+1), 0])
+    cube([10,3,12 - 3.2]);
 
 // =============================================================================
 // MODULES (Functions)
@@ -200,7 +218,7 @@ module internal_cavity() {
         inner_radius = inner_corner_radius;
         inner_length = case_length - 2 * wall_thickness;
         inner_width = case_width - 2 * wall_thickness;
-        
+
         hull() {
             translate([-(inner_length/2 - inner_radius), -(inner_width/2 - inner_radius), 0])
                 cylinder(h = case_height, r = inner_radius, $fn = 32);
@@ -259,9 +277,12 @@ module usb_port_hole() {
 
 // Create Reset port hole
 module reset_port_hole() {
+    
+    echo(pcb_length/2 - 22.5 + qencoder_width/2- 3.2);
+    
     // Position Reset hole on the side wall
     translate([
-        -usb_position_y + (pcb_length/2 - 22.5 + qencoder_width/2),  //22.5
+        -usb_position_y + (pcb_length/2 - 22.5 + qencoder_width/2- 3.2),  //22.5
         (case_width/2 + usb_offset_from_edge - 1), 
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
     ]) {
@@ -302,83 +323,6 @@ module pcb_mounting_holes() {
                     d = standoff_hole_diameter + clearance, 
                     $fn = 16
                 );
-            }
-        }
-    }
-}
-
-// Create small PCB lip to lock cover plate in on the left and right
-module cover_left_lip() {
-    // Position Reset hole on the side wall
-    color ("red") translate([
-        usb_position_y, 
-        (case_width/2 - 2), 
-        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 2
-    ]) {
-        cube(cover_lip_indent, center = true);
-    }
-}
-
-// Create small PCB lip to lock top plate in on the left and right
-module cover_right_lip() {
-    // Position Reset hole on the side wall
-    color ("red") translate([
-        -usb_position_y, 
-        -(case_width/2 - 2), 
-        bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 2
-    ]) {
-        cube(cover_lip_indent, center = true);
-    }
-}
-
-
-// Reference module to show PCB position (for design verification)
-module pcb_reference() {
-    translate([0, 0, bottom_thickness + standoff_height]) {
-        // PCB outline
-        color("green", 0.3) {
-            hull() {
-                pcb_corner_radius = 2;
-                translate([-(pcb_length/2 - pcb_corner_radius), -(pcb_width/2 - pcb_corner_radius), 0])
-                    cylinder(h = pcb_thickness, r = pcb_corner_radius, $fn = 16);
-                
-                translate([+(pcb_length/2 - pcb_corner_radius), -(pcb_width/2 - pcb_corner_radius), 0])
-                    cylinder(h = pcb_thickness, r = pcb_corner_radius, $fn = 16);
-                
-                translate([+(pcb_length/2 - pcb_corner_radius), +(pcb_width/2 - pcb_corner_radius), 0])
-                    cylinder(h = pcb_thickness, r = pcb_corner_radius, $fn = 16);
-                
-                translate([-(pcb_length/2 - pcb_corner_radius), +(pcb_width/2 - pcb_corner_radius), 0])
-                    cylinder(h = pcb_thickness, r = pcb_corner_radius, $fn = 16);
-            }
-        }
-        
-        // Component clearance volume
-        color("blue", 0.1) {
-            translate([0, 0, pcb_thickness]) {
-                hull() {
-                    pcb_corner_radius = 2;
-                    translate([-(pcb_length/2 - pcb_corner_radius), -(pcb_width/2 - pcb_corner_radius), 0])
-                        cylinder(h = pcb_height_clearance, r = pcb_corner_radius, $fn = 16);
-                    
-                    translate([+(pcb_length/2 - pcb_corner_radius), -(pcb_width/2 - pcb_corner_radius), 0])
-                        cylinder(h = pcb_height_clearance, r = pcb_corner_radius, $fn = 16);
-                    
-                    translate([+(pcb_length/2 - pcb_corner_radius), +(pcb_width/2 - pcb_corner_radius), 0])
-                        cylinder(h = pcb_height_clearance, r = pcb_corner_radius, $fn = 16);
-                    
-                    translate([-(pcb_length/2 - pcb_corner_radius), +(pcb_width/2 - pcb_corner_radius), 0])
-                        cylinder(h = pcb_height_clearance, r = pcb_corner_radius, $fn = 16);
-                }
-            }
-        }
-        
-        // Mounting holes
-        color("red") {
-            for (pos = mount_hole_positions) {
-                translate([pos[0], pos[1], 0]) {
-                    cylinder(h = pcb_thickness, d = 3.2, $fn = 16);
-                }
             }
         }
     }
