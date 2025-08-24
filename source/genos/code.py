@@ -25,7 +25,8 @@ TEST_CONNECT = False
 # --- Constants and Enums ---
 class USBMode:
     DISABLED = 0
-    ENABLED = 1
+    PENDING = 1
+    ENABLED = 2
 
 class EncoderMode:
     TEMPO = 0
@@ -75,7 +76,7 @@ COLOR_MAP = {
 }
 
 # Key used to reflect timed Eccoder mode changes on LED
-VARIATION_KEY = 0
+USBMODE_KEY = 0
 
 # Key used to trigger test tune
 TUNE_KEY = 11
@@ -85,7 +86,7 @@ class ControllerConfig:
     def __init__(self):
         self.display_banner =     "   YAMAHA GENOS     "
         self.display_sub_banner = "Arranger Controller "
-        self.version = "1.1"
+        self.version = "1.2"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -98,6 +99,7 @@ class ControllerConfig:
         self.version_timer = 15
         self.key_bright_timer = 0.20
         self.key_hold_timer = 1
+        self.usb_hold_timer = 2
         
         # Initialize MacroPad key mappings for Genos Layout
         self.key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
@@ -677,11 +679,11 @@ class StateManager:
         current_time = time.time()
 
         # Re-enakle USB drive after long keypress after timeout
-        if (self.usb_mode == USBMode.DISABLED and
-            self.usb_start_time != 0 and
-            current_time - self.usb_start_time > self.config.usb_timer):
-            storage.enable_usb_drive()            
-            return "usb_enabled"
+        #if (self.usb_mode == USBMode.DISABLED and
+        #    self.usb_start_time != 0 and
+        #    current_time - self.usb_start_time > self.config.usb_timer):
+        #    storage.enable_usb_drive()            
+        #    return "usb_enabled"
 
         # Revert volume to rotor after timeout
         if (self.encoder_mode == EncoderMode.VOLUME and
@@ -870,20 +872,40 @@ class GenosController:
 
     def run(self):
         """Main controller loop"""
-        
-        key_start_time = 0
-        key_hold_timer = 0.25
-        shift_start_time  = 0      
-        shift_hold_timer = 0.25
-        
+                
         while True:
             try:
                 # Handle key events, press and release
                 key_event = self.macropad.keys.events.get()
                 
+                # Check for special case of USB drive enable/disable on prolonged key press
                 if key_event and key_event.pressed:                    
-                    self._handle_key_press(key_event.key_number)        # Send any key MIDI message
-                    key_start_time = time.time()                    
+                    if key_event.key_number == USBMODE_KEY:
+                        self.state.usb_mode = USBMode.PENDING
+                        
+                        self.state.lit_keys[key_event.key_number] = True
+                        self.state.usb_start_time = time.time()
+                        self.state.usb_start_time = time.time()
+
+                        self.display.update_text(9, "USB Mode: Pending")
+                        print("USB Mode: Enable Pending")
+
+
+                    self._handle_key_press(key_event.key_number)        # Send any key MIDI message regardless
+                    usb_start_time = time.time()                    
+
+                # Check on USB Mode key if USB drive is to be re-enabled
+                elif key_event and key_event.released:
+                    if key_event.key_number == USBMODE_KEY:
+                        if (self.state.usb_mode == USBMode.PENDING) and ((time.time() - self.state.usb_start_time) > self.config.usb_hold_timer):
+                            self.state.usb_mode = USBMode.ENABLED
+                            storage.enable_usb_drive()
+                            self.display.update_text(9, "USB Mode: Enabled")
+                            print("USB Mode: Enabled")
+
+                            self._preset_pixels()
+                        else:
+                            self.state.usb_mode = USBMode.DISABLED                            
                             
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
