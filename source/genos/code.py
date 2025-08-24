@@ -4,6 +4,7 @@
 # It hadles MIDI NoteOn and NoteOff only and We may remove SysEx support to clean the code up
 
 import board, displayio
+import storage
 import terminalio
 import time
 
@@ -22,6 +23,10 @@ from adafruit_midi.system_exclusive import SystemExclusive
 TEST_CONNECT = False
 
 # --- Constants and Enums ---
+class USBMode:
+    DISABLED = 0
+    ENABLED = 1
+
 class EncoderMode:
     TEMPO = 0
     VOLUME = 1
@@ -86,6 +91,7 @@ class ControllerConfig:
         self.usb_left = True
 
         # Timers for tempo, volume, and key brightness
+        self.usb_timer = 2
         self.tempo_timer = 60
         self.volume_timer = 60
         self.encoder_timer = 15
@@ -636,10 +642,14 @@ class StateManager:
         self.encoder_sign = False
         self.rotor_flag = 0  # -1=slow, 0=off, 1=fast
         
+        # Track USB enabled or disabled mode 
+        self.usb_mode = USBMode.ENABLED
+
         # Controller Shift Mode based on Variation Key
         self.shift_mode = ShiftKeyMode.OFF
 
         # Timing
+        self.usb_start_time = 0
         self.tempo_start_time = 0
         self.volume_start_time = 0
         self.version_start_time = 0
@@ -665,6 +675,13 @@ class StateManager:
     def check_timeouts(self):
         """Check and handle encoder mode timeouts"""
         current_time = time.time()
+
+        # Re-enakle USB drive after long keypress after timeout
+        if (self.usb_mode == USBMode.DISABLED and
+            self.usb_start_time != 0 and
+            current_time - self.usb_start_time > self.config.usb_timer):
+            storage.enable_usb_drive()            
+            return "usb_enabled"
 
         # Revert volume to rotor after timeout
         if (self.encoder_mode == EncoderMode.VOLUME and
