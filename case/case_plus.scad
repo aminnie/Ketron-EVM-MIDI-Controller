@@ -12,9 +12,12 @@
 // PARAMETERS
 // =============================================================================
 
+// Overall cover dimensions addinh Quad Encoder
+qencoder_width = 25;      // Width of Quad Encoder (mm)
+
 // Adafruit Macropad RP2040 PCB parameters
 pcb_length = 105;          // RP2040 PCB length (mm)
-pcb_width = 60;            // RP2040 PCB width (mm)
+pcb_width = 60 + qencoder_width;    // RP2040 + Quad Encoder PCB width (mm)
 pcb_thickness = 1.6;       // Standard PCB thickness (mm)
 pcb_clearance = 1;         // Space around PCB (mm)
 pcb_height_clearance = 8;  // Space above PCB for components (mm)
@@ -37,16 +40,16 @@ top_cover_lip = 1;         // How much top cover overlaps case walls (mm)
 usb_width = 11;             // Width of USB-C port (mm)
 usb_height = 5;            // ** Was 4 - Height of USB-C port (mm)
 usb_offset_from_edge = 3;  // Distance from PCB edge to USB center (mm)
-usb_position_y = 0;        // Y position along case width (0 = center)
+usb_position_y = 0 + qencoder_width/2;    // Y position along case width (0 = center)
 usb_corner_radius = 1;     // Rounded corners for USB hole
 
 // PCB mounting holes keep 2mm for wall in mind
 mount_hole_diameter = 4.56;   // Diameter for M3 screws (mm)
 mount_hole_positions = [   // [X, Y] positions relative to PCB center
-    [-pcb_length/2 + 19, -26.5],   // Bottom left
-    [pcb_length/2 - 4, -26.5],   // Bottom right  
-    [-pcb_length/2 + 19, 26.5],    // Top left
-    [pcb_length/2 - 4, 26.5]     // Top right
+    [-pcb_length/2 + 19, -26.5 + qencoder_width/2],   // Bottom left
+    [pcb_length/2 - 4, -26.5 + qencoder_width/2],   // Bottom right  
+    [-pcb_length/2 + 19, 26.5 + qencoder_width/2],    // Top left
+    [pcb_length/2 - 4, 26.5 + qencoder_width/2]     // Top right
 ];
 
 // Standoffs for PCB mounting
@@ -258,7 +261,7 @@ module usb_port_hole() {
 module reset_port_hole() {
     // Position Reset hole on the side wall
     translate([
-        -usb_position_y + (pcb_length/2 - 22.5), 
+        -usb_position_y + (pcb_length/2 - 22.5 + qencoder_width/2),  //22.5
         (case_width/2 + usb_offset_from_edge - 1), 
         bottom_thickness + standoff_height + pcb_thickness + usb_height/2 - 5
     ]) {
