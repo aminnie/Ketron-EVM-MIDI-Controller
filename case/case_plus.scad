@@ -7,7 +7,8 @@
 // The bottom case along with the filler layer and cover OpenSCAD models provivided
 // wraps the Adafruit MacroPad RP2040 in a tightfitting case. The case has a USB port
 // the reset button opening, as well as 4 mounting holes to fasten the PCD to the case.
-
+//
+// Last update: 08/24/2025
 // =============================================================================
 // PARAMETERS
 // =============================================================================
