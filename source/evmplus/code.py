@@ -61,20 +61,20 @@ class EFXLevel:
 
 # Manage Control Panel Volume Sliders via midi CC
 class SliderCC:
-    PLAYER_SLIDER = 0x66   #CC 102
-    STYLE_SLIDER = 0x67
-    DRUM_SLIDER = 0x68
-    BASS_SLIDER = 0x69
-    CHORD_SLIDER = 0x6A
-    REALCHORD_SLIDER = 0x6B
-    LOWERS_SLIDER = 0x6C
-    USER2_SLIDER = 0x6D
-    USER3_SLIDER = 0x6E
-    VOICE1_SLIDER = 0x72     #CC 114
-    VOICE2_SLIDER = 0x73
-    DRAWBARS_SLIDER = 0x74
-    MICRO1_SLIDER = 0x75
-    VOCAL_SLIDER = 0x76
+    PLAYER_CC = 0x66   #CC 102
+    STYLE_CC = 0x67
+    DRUM_CC = 0x68
+    BASS_CC = 0x69
+    CHORD_CC = 0x6A
+    REALCHORD_CC = 0x6B
+    LOWERS_CC = 0x6C
+    USER2_CC = 0x6D
+    USER3_CC = 0x6E
+    VOICE1_CC = 0x72     #CC 114
+    VOICE2_CC = 0x73
+    DRAWBARS_CC = 0x74
+    MICRO1_CC = 0x75
+    VOCAL_CC = 0x76
 
 class Colors:
     WHITE = 0x606060
@@ -323,6 +323,7 @@ class KeyLookupCache:
         # Ketron Pedal and Tab MIDI lookup dictionaries
         self.pedal_midis = self._init_pedal_midis()
         self.tab_midis = self._init_tab_midis()
+        self.cc_midis = self._init_cc_midis()
 
         self._build_cache()
 
@@ -408,6 +409,17 @@ class KeyLookupCache:
             "PAD_FAM": 0x70, "SYNTH_FAM": 0x71, "FADEOUT": 0x73, "BASS_TO_ROOT": 0x74,
             "GM": 0x77
         }
+
+    def _init_cc_midis(self):
+        """Initialize MIDI CC dictionary"""
+        return {
+            "PLAYER": SliderCC.PLAYER_CC, "STYLE": SliderCC.STYLE_CC, "DRUM": SliderCC.DRUM_CC, 
+            "CHORD": SliderCC.CHORD_CC, "REALCHORD": SliderCC.REALCHORD_CC, 
+            "BASS": SliderCC.BASS_CC, "LOWERS": SliderCC.LOWERS_CC, "USER2": SliderCC.USER2_CC, "USER3": SliderCC.USER3_CC, 
+            "VOICE1": SliderCC.VOICE1_CC, "VOICE2": SliderCC.VOICE2_CC, "DRAWBARS": SliderCC.DRAWBARS_CC,
+            "MICRO1": SliderCC.MICRO1_CC, "VOCAL": SliderCC.VOCAL_CC
+    }
+
 
     def _build_cache(self):
         """Build lookup cache at startup"""
@@ -968,34 +980,34 @@ class EVMController:
         if encoder_number == 3:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"QUAD Lower Vol:{volume}")
-                ccCode = SliderCC.LOWERS_SLIDER
+                ccCode = SliderCC.LOWERS_CC
             else:
                 self.display.update_text(9, f"QUAD Style Vol:{volume}")
-                ccCode = SliderCC.STYLE_SLIDER
+                ccCode = SliderCC.STYLE_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 2:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"QUAD Voice1 Vol:{volume}")
-                ccCode = SliderCC.VOICE1_SLIDER
+                ccCode = SliderCC.VOICE1_CC
             else:
                 self.display.update_text(9, f"QUAD Drum Vol:{volume}")
-                ccCode = SliderCC.DRUM_SLIDER
+                ccCode = SliderCC.DRUM_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 1:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"QUAD Voice2 Vol:{volume}")
-                ccCode = SliderCC.VOICE2_SLIDER
+                ccCode = SliderCC.VOICE2_CC
             else:
                 self.display.update_text(9, f"QUAD Chord Vol:{volume}")
-                ccCode = SliderCC.CHORD_SLIDER
+                ccCode = SliderCC.CHORD_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 0:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"QUAD DrawBar Vol:{volume}")
-                ccCode = SliderCC.DRAWBARS_SLIDER
+                ccCode = SliderCC.DRAWBARS_CC
             else:
                 self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
-                ccCode = SliderCC.REALCHORD_SLIDER
+                ccCode = SliderCC.REALCHORD_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
 
     def _handle_encoder_switch(self):

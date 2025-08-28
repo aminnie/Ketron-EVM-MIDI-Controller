@@ -13,6 +13,8 @@
 // PARAMETERS
 // =============================================================================
 
+logotext = "AJAMSONIC HS13+";
+
 // Overall cover dimensions of added Quad Encoder
 qencoder_width = 25;      // Width of Quad Encoder (mm)
 
@@ -76,6 +78,9 @@ difference() {
         // Main case body
         case_body();
 
+        // AJAM logo text
+        logo_text();
+        
         // PCB mounting standoffs
         pcb_standoffs();
     }        
@@ -230,6 +235,22 @@ module internal_cavity() {
             
             translate([-(inner_length/2 - inner_radius), +(inner_width/2 - inner_radius), 0])
                 cylinder(h = case_height, r = inner_radius, $fn = 32);
+        }
+    }
+}
+
+// Create AJAMSONIC lettering on the right side
+module logo_text() {
+    wall_offset = (pcb_width + (wall_thickness * 2)) / 2;
+    
+    translate([0, -wall_offset + 0.5, 7]) // y = -31.5
+    rotate([90,0,0]) {
+        cube([70, 10, 1], center = true);
+        font = "DejaVu Sans:style=Bold";
+        letter_size = 5;
+        string = logotext;
+        linear_extrude(height = 0.8) {
+          text(string, size = letter_size, font = font, halign = "center", valign = "center");
         }
     }
 }

@@ -201,11 +201,11 @@ module logo_text() {
     
     translate([0, -wall_offset + 0.5, 7]) // y = -31.5
     rotate([90,0,0]) {
-        cube([50, 10, 1], center = true);
+        cube([70, 10, 1], center = true);
         font = "DejaVu Sans:style=Bold";
-        letter_size = 4;
+        letter_size = 5;
         string = logotext;
-        linear_extrude(height = 1) {
+        linear_extrude(height = 0.8) {
           text(string, size = letter_size, font = font, halign = "center", valign = "center");
         }
     }
