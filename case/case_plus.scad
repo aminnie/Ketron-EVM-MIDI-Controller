@@ -81,6 +81,7 @@ difference() {
         // AJAM logo text
         logo_text();
         
+
         // PCB mounting standoffs
         pcb_standoffs();
     }        
@@ -96,6 +97,9 @@ difference() {
 
     // Remove PCB mounting holes
     pcb_mounting_holes();
+    
+    // Indent in bottom for Stemma connector
+    stemma_hole();     
 }
 
 // Add cover supports into the case hole
@@ -239,7 +243,7 @@ module internal_cavity() {
     }
 }
 
-// Create AJAMSONIC lettering on the right side
+// Create Logo lettering on the right side
 module logo_text() {
     wall_offset = (pcb_width + (wall_thickness * 2)) / 2;
     
@@ -253,6 +257,12 @@ module logo_text() {
           text(string, size = letter_size, font = font, halign = "center", valign = "center");
         }
     }
+}
+
+// Indent for the Quad Encoder Stemma connector & cable in the base
+module stemma_hole() {
+    translate([20, -35, 0.5])
+        cube([10, 10, 10]);
 }
 
 // Create PCB mounting standoffs
