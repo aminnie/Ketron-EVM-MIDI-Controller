@@ -117,13 +117,14 @@ class EVMConfig:
         # USB port on the left side of the MacroPad
         self.usb_left = True
 
-        # Timers for tempo, volume, and key brightness
+        # Timers for tempo, volume, key brightness, etc
         self.tempo_timer = 60
         self.volume_timer = 60
         self.value_timer = 60
         self.version_timer = 15
         self.key_bright_timer = 0.20
         self.key_hold_timer = 1
+        self.quad_switch_timer = .5
 
         # Quad encoder variables
         self.quad_encoders = []
@@ -685,17 +686,23 @@ class StateManager:
         self.version_start_time = 0
         self.led_start_time = 0
 
+        # Track last quad encoder switch pressed to avoid duplicates and timer that re-enables dups after 500ms
+        self.quad_switch_start_time = 0
+        self.last_quad_switch = 10
+
         # Preset version display to end after 15s
         self.version_start_time = time.time()
 
-        # LED state
-        self.lit_keys = [False] * 12
-        
         # Tracks if I2C devices is attached.
         self.is_quadencoder = False
         
         self.quad_volumes = [0, 0, 0, 0]
         self.quad_volumes_shift = [0, 0, 0, 0]
+
+
+        # LED state
+        self.lit_keys = [False] * 12
+        
 
     def update_encoder_mode(self, new_mode):
         """Update encoder mode with timed reset"""
@@ -734,6 +741,13 @@ class StateManager:
             self.encoder_mode = EncoderMode.ROTOR
             return "timeout_value"
 
+        # Re-enable quad switch duplicates timeout
+        if (self.quad_switch_start_time != 0 and
+            current_time - self.quad_switch_start_time > self.config.quad_switch_timer):
+            self.last_quad_switch = 10
+            self.quad_switch_start_time = 0
+            return "quad_switch_timeout"
+            
         # Clear version value after timeout
         if (self.version_start_time != 0 and
             current_time - self.version_start_time > self.config.version_timer):
@@ -979,36 +993,67 @@ class EVMController:
         """Process Quad Encoder Volumes"""
         if encoder_number == 3:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"QUAD Lower Vol:{volume}")
+                self.display.update_text(9, f"KNOB1 Lower Vol:{volume}")
                 ccCode = SliderCC.LOWERS_CC
             else:
-                self.display.update_text(9, f"QUAD Style Vol:{volume}")
+                self.display.update_text(9, f"KNOB1 Style Vol:{volume}")
                 ccCode = SliderCC.STYLE_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 2:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"QUAD Voice1 Vol:{volume}")
+                self.display.update_text(9, f"KNOB2 Voice1 Vol:{volume}")
                 ccCode = SliderCC.VOICE1_CC
             else:
-                self.display.update_text(9, f"QUAD Drum Vol:{volume}")
+                self.display.update_text(9, f"KNOB2 Drum Vol:{volume}")
                 ccCode = SliderCC.DRUM_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 1:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"QUAD Voice2 Vol:{volume}")
+                self.display.update_text(9, f"KNOB3 Voice2 Vol:{volume}")
                 ccCode = SliderCC.VOICE2_CC
             else:
-                self.display.update_text(9, f"QUAD Chord Vol:{volume}")
+                self.display.update_text(9, f"KNOB3 Chord Vol:{volume}")
                 ccCode = SliderCC.CHORD_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 0:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"QUAD DrawBar Vol:{volume}")
+                self.display.update_text(9, f"KNOB4 DrawBar Vol:{volume}")
                 ccCode = SliderCC.DRAWBARS_CC
             else:
-                self.display.update_text(9, f"QUAD R/Chord Vol:{volume}")
+                self.display.update_text(9, f"KNOB4 R/Chord Vol:{volume}")
                 ccCode = SliderCC.REALCHORD_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+
+    def _process_quad_switch(self, encoder_number):
+        """Process Quad Encoder Volumes"""        
+        list_all_voices = [SliderCC.BASS_CC, SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
+        list_lowers_voices = [SliderCC.LOWERS_CC]
+        list_bass_voices = [SliderCC.BASS_CC]
+
+        if encoder_number == 3 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
+            self.display.update_text(9, f"KNOB4: Vol All 96")
+            volume = 0x60
+            for index, ccCode in enumerate(list_all_voices):
+                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+        elif encoder_number == 2 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
+            self.display.update_text(9, f"KNOB3: Vol All 0")
+            volume = 0x00
+            for index, ccCode in enumerate(list_all_voices):
+                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+        elif encoder_number == 1 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
+            self.display.update_text(9, f"KNOB2: Vol Lowers 0")
+            volume = 0x00
+            for index, ccCode in enumerate(list_lowers_voices):
+                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+        elif encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
+            self.display.update_text(9, f"KNOB1: Vol Bass 0")
+            volume = 0x00
+            for index, ccCode in enumerate(list_bass_voices):
+                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
+        
+        # Remember the last encoder switch pressed to avoid duplicate triggers, but re-enable via timer
+        self.state.last_quad_switch = encoder_number
+        self.state.quad_switch_start_time = time.time()
 
     def _handle_encoder_switch(self):
         """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""
@@ -1055,10 +1100,10 @@ class EVMController:
             
             # Use Shift Lock or Shift Normal lists to adjust valyes
             if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
-                if rotary_pos != self.quad_last_positions_shift[n]:
-                    
-                    # If switch not pressed, update volume for encoders 
-                    if self.quad_switches[n].value:  
+                # If switch not pressed, update volume for encoders 
+                if self.quad_switches[n].value:  
+                
+                    if rotary_pos != self.quad_last_positions_shift[n]:                    
                         # Update channel volume with new encoder position 
                         if rotary_pos > self.quad_last_positions_shift[n]:      # Advance forward
                             self.state.quad_volumes_shift[n] += encoder_step
@@ -1076,14 +1121,18 @@ class EVMController:
                             
                             self._process_quad_volume(n, self.state.quad_volumes_shift[n])
                                                                                 
-                    # Set last position to current position after evaluating
-                    self.quad_last_positions_shift[n] = rotary_pos
+                        # Set last position to current position after evaluating
+                        self.quad_last_positions_shift[n] = rotary_pos
+
+                # Handle switch press for this encoder
+                else:
+                    self._process_quad_switch(n)
                         
-            elif self.state.shift_mode == ShiftKeyMode.OFF:
-                if rotary_pos != self.quad_last_positions[n]:
+            elif self.state.shift_mode == ShiftKeyMode.OFF:                    
+                # If switch not pressed, update volume for encoders 
+                if self.quad_switches[n].value:  
                     
-                    # If switch not pressed, update volume for encoders 
-                    if self.quad_switches[n].value:  
+                    if rotary_pos != self.quad_last_positions[n]:
                         # Update channel volume with new encoder position 
                         if rotary_pos > self.quad_last_positions[n]:        # Advance forward
                             self.state.quad_volumes[n] += encoder_step
@@ -1101,8 +1150,12 @@ class EVMController:
 
                             self._process_quad_volume(n, self.state.quad_volumes[n])
                                     
-                    # Set last position to current position after evaluating
-                    self.quad_last_positions[n] = rotary_pos
+                        # Set last position to current position after evaluating
+                        self.quad_last_positions[n] = rotary_pos
+
+                # Handle switch press for this encoder
+                else:
+                    self._process_quad_switch(n)
 
 
     def _update_display(self):

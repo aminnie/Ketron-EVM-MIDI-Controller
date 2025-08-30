@@ -74,7 +74,9 @@ difference() {
     // Cut out encoder shaft holes
     quad_encoder_round_holes();    
 
-    main_encoder_round_hole();    
+    main_encoder_round_hole();
+
+    logo_text();
 }
 
 wall_width = 2;
@@ -198,3 +200,21 @@ module main_encoder_round_hole() {
             );        
         }        
 }
+
+
+// Create Logo lettering indent on the top
+module logo_text() {
+
+    logotext = "HS13+";
+    
+    translate([-46, 0, 1])
+    color("green") rotate([180, 0, -90]) {
+        font = "DejaVu Sans:style=Bold";
+        letter_size = 2.5;
+        string = logotext;
+        linear_extrude(height = 2) {
+          text(string, size = letter_size, font = font, halign = "center", valign = "center");
+        }
+    }
+}
+
