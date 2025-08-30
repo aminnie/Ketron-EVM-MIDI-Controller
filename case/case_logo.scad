@@ -304,22 +304,22 @@ module reset_port_hole() {
 // Create PCB mounting holes
 module pcb_mounting_holes() {
     for (pos = mount_hole_positions) {
-        translate([pos[0], pos[1], -0.5]) {
+        color("blue") translate([pos[0], pos[1], -0.5]) {
             // Through hole for screw
             cylinder(
-                h = case_height + 1, 
+                h = bottom_thickness + 1, 
                 d = mount_hole_diameter + clearance, 
                 $fn = 16
             );
+        }
             
-            // Countersink hole in standoff
-            translate([0, 0, bottom_thickness]) {
-                cylinder(
-                    h = standoff_height + 0.5, 
-                    d = standoff_hole_diameter + clearance, 
-                    $fn = 16
-                );
-            }
+        // Countersink hole in standoff
+        color("red") translate([pos[0], pos[1], -0.5]) {
+            cylinder(
+                h = bottom_thickness - 0.5, 
+                d = mount_hole_diameter + clearance + 2, 
+                $fn = 16
+            );
         }
     }
 }
