@@ -993,34 +993,34 @@ class EVMController:
         """Process Quad Encoder Volumes"""
         if encoder_number == 3:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"KNB1: Lower Vol {volume}")
+                self.display.update_text(9, f"KNOB1: Lower Vol {volume}")
                 ccCode = SliderCC.LOWERS_CC
             else:
-                self.display.update_text(9, f"KNB1: Style Vol {volume}")
+                self.display.update_text(9, f"KNOB1: Style Vol {volume}")
                 ccCode = SliderCC.STYLE_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 2:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"KNB2: Voice1 Vol {volume}")
+                self.display.update_text(9, f"KNOB2: Voice1 Vol {volume}")
                 ccCode = SliderCC.VOICE1_CC
             else:
-                self.display.update_text(9, f"KNB2: Drum Vol {volume}")
+                self.display.update_text(9, f"KNOB2: Drum Vol {volume}")
                 ccCode = SliderCC.DRUM_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 1:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"KNB3: Voice2 Vol {volume}")
+                self.display.update_text(9, f"KNOB3: Voice2 Vol {volume}")
                 ccCode = SliderCC.VOICE2_CC
             else:
-                self.display.update_text(9, f"KNB3: Chord Vol {volume}")
+                self.display.update_text(9, f"KNOB3: Chord Vol {volume}")
                 ccCode = SliderCC.CHORD_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 0:
             if self.state.shift_mode == ShiftKeyMode.OFF:
-                self.display.update_text(9, f"KNB4: DrwBar Vol {volume}")
+                self.display.update_text(9, f"KNOB4: DrwBar Vol {volume}")
                 ccCode = SliderCC.DRAWBARS_CC
             else:
-                self.display.update_text(9, f"KNB4: R/Chrd Vol {volume}")
+                self.display.update_text(9, f"KNOB4: R/Chrd Vol {volume}")
                 ccCode = SliderCC.REALCHORD_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
 
@@ -1031,22 +1031,22 @@ class EVMController:
         list_bass_voices = [SliderCC.BASS_CC]
 
         if encoder_number == 3 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB4: All Vol 96")
+            self.display.update_text(9, f"KNOB4: All Vol 96")
             volume = 0x60
             for index, ccCode in enumerate(list_all_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 2 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB3: All Vol 0")
+            self.display.update_text(9, f"KNOB3: All Vol 0")
             volume = 0x00
             for index, ccCode in enumerate(list_all_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 1 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB2: Lower Vol 0")
+            self.display.update_text(9, f"KNOB2: Lower Vol 0")
             volume = 0x00
             for index, ccCode in enumerate(list_lowers_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB1: Bass Vol 0")
+            self.display.update_text(9, f"KNOB1: Bass Vol 0")
             volume = 0x00
             for index, ccCode in enumerate(list_bass_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
