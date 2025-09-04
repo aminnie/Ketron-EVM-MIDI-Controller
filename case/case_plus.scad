@@ -261,7 +261,7 @@ module logo_text() {
 
 // Indent for the Quad Encoder Stemma connector & cable in the base
 module stemma_hole() {
-    translate([20, -35, 0.5])
+    translate([15, -35, 0.5])
         cube([10, 10, 10]);
 }
 
