@@ -926,8 +926,9 @@ class EVMController:
     def run(self):
         """Main controller loop"""
         
-        key_start_time = 0
-        key_hold_timer = 0.25
+        self.key_start_time = 0
+        self.shift_start_time  = 0
+        self.last_key_pressed = VARIATION_KEY  
         
         while True:
             try:
@@ -937,13 +938,15 @@ class EVMController:
                 # Pressed: Check for potential Shift Key operation. If Variation key pressed and held in, then
                 # shift key is pending and no MIDI "VARIATION" send until key release
                 if key_event and key_event.pressed:                    
+                    self.last_key_pressed = key_event.key_number
+
                     if key_event.key_number == VARIATION_KEY:
                         self.state.shift_mode = ShiftKeyMode.PENDING
                         # print("Shift mode: Pending")
                         
                         self.state.lit_keys[key_event.key_number] = True
                         self.state.led_start_time = time.time()
-                        shift_start_time = time.time()
+                        self.shift_start_time = time.time()
                     else:
                         # Other non VAR/Shift keys
                         if self.state.shift_mode == ShiftKeyMode.PENDING:
@@ -951,28 +954,30 @@ class EVMController:
                             self.display.update_text(9, "Layer: Shift")
                             # print("Shift mode: Active Shift")
                         self._handle_key_press(key_event.key_number)        # Send any key MIDI message
-                    key_start_time = time.time()                    
+                    self.key_start_time = time.time()                    
                     continue
 
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
                     if key_event.key_number == VARIATION_KEY:
-                        if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > self.config.shift_hold_timer):
+                        if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - self.shift_start_time) > self.config.shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
                             self.display.update_text(9, "Layer: Shift Lock")
                             # print("Shift mode: Active Lock")
                             self._preset_pixels()
 
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
-                            self._handle_key_press(key_event.key_number)        # Send VAR MIDI message
+                            # Send VAR MIDI message, but only if no other key pressed during shift mode
+                            if self.last_key_pressed == VARIATION_KEY:
+                                self._handle_key_press(key_event.key_number)                                    
                             self.state.shift_mode = ShiftKeyMode.OFF                        
                             self.display.update_text(9, "")
                             # print("Shift mode: Off")
                             self._preset_pixels()
                                                 
                     elif key_event.key_number == TUNE_KEY: 
-                        if (time.time() - key_start_time) > self.config.tune_hold_timer:
+                        if (time.time() - self.key_start_time) > self.config.tune_hold_timer:
                             print("Starting test tune")
                             self.display.update_text(9, "CHN #5: Test Tune")
                             self.midi_handler.test_connectivity()
