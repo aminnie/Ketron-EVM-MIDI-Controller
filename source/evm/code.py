@@ -1,4 +1,4 @@
-# Ketron EVM Button Controller
+# Ketron EVM Arranger Controller
 
 import board, displayio
 import terminalio
@@ -94,13 +94,15 @@ class EVMConfig:
         self.usb_left = True
 
         # Timers for tempo, volume, and key brightness
+        self.key_bright_timer = 0.20
+        self.shift_hold_timer = 0.25
+        
         self.tempo_timer = 60
         self.volume_timer = 60
         self.value_timer = 60
         self.version_timer = 15
-        self.key_bright_timer = 0.20
-        self.key_hold_timer = 1
-        
+        self.tune_hold_timer = 2
+
         # Initialize MacroPad key mappings
         self.key_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         if not self.usb_left:
@@ -108,6 +110,7 @@ class EVMConfig:
 
     def get_key(self, key):
         """Safe key mapping with bounds checking"""
+        
         if key < 0 or key > 11:
             print("Invalid key map request: {}".format(key))
             return 0
@@ -135,6 +138,7 @@ class MIDIHandler:
 
     def send_pedal_sysex(self, midi_value):
         """Send SysEx for Pedal commands"""
+        
         try:
             # Send ON followed by OFF Message
             if midi_value < 128:
@@ -163,6 +167,7 @@ class MIDIHandler:
 
     def send_tab_sysex(self, midi_value):
         """Send SysEx for Tab commands"""
+        
         try:
             self.tab_sysex[0] = midi_value
             self.tab_sysex[1] = MIDIStatus.ON
@@ -179,6 +184,7 @@ class MIDIHandler:
 
     def send_macro_sysex(self, midi_key):
         """Send one or more macro SysEx message(s)"""
+        
         try:
             for macro in self.key_cache.user_macro_midis:
                 for value in macro.get(midi_key, []):
@@ -192,6 +198,7 @@ class MIDIHandler:
 
     def send_master_volume(self, updown):
         """Send volume control via CC11"""
+        
         try:
             # Change volume in 8-unit increments
             if updown == -1:
@@ -207,6 +214,7 @@ class MIDIHandler:
 
     def test_connectivity(self):
         """Test MIDI connectivity with audible notes"""
+        
         try:
             # Notes for a short segment of "Ode to Joy"
             # Using MIDI note numbers (C4=60, D4=62, E4=64, F4=65, G4=67, A4=69, B4=71, C5=72)
@@ -270,6 +278,7 @@ class KeyLookupCache:
 
     def _init_pedal_midis(self):
         """Initialize pedal MIDI dictionary"""
+        
         return {
             "Sustain": 0x00, "Soft": 0x01, "Sostenuto": 0x02, "Arr.A": 0x03,
             "Arr.B": 0x04, "Arr.C": 0x05, "Arr.D": 0x06, "Fill1": 0x07,
@@ -330,6 +339,7 @@ class KeyLookupCache:
 
     def _init_tab_midis(self):
         """Initialize tab MIDI dictionary"""
+        
         return {
             "DIAL_DOWN": 0x0, "DIAL_UP": 0x1, "PLAYER_A": 0x2, "PLAYER_B": 0x3,
             "ENTER": 0x4, "MENU": 0x6, "LYRIC": 0x7, "LEAD": 0x8, "VARIATION": 0x9,
@@ -400,6 +410,7 @@ class KeyLookupCache:
 
     def get_key_midi(self, key_id, shift_mode):
         """Get cached MIDI data for key"""
+        
         if (shift_mode == ShiftKeyMode.ACTIVE_SHIFT) or (shift_mode == ShiftKeyMode.ACTIVE_LOCK):
             return self.cache_shift.get(key_id, (0, "", 0))
         else:
@@ -407,6 +418,7 @@ class KeyLookupCache:
 
     def validate_color_string(self, color_string):
         """Validate and return color code"""
+        
         return COLOR_MAP.get(color_string.lower(), Colors.WHITE)
 
 # --- Configuration File Handler ---
@@ -418,6 +430,7 @@ class ConfigFileHandler:
 
     def safe_file_read(self, filename):
         """Safely read file with error handling"""
+        
         try:
             with open(filename, "r") as f:
                 return f.readlines()
@@ -427,6 +440,7 @@ class ConfigFileHandler:
 
     def parse_config_line(self, line):
         """Parse a single config line with validation"""
+        
         try:
             line = line.strip()
             if line.startswith('#') or not line:
@@ -454,7 +468,8 @@ class ConfigFileHandler:
             return None
 
     def validate_midi_string(self, midi_type, command):
-        """Validate MIDI command against known commands"""    
+        """Validate MIDI command against known commands"""
+        
         if midi_type == MIDIType.PEDAL:
             return command in self.key_cache.pedal_midis
         elif midi_type == MIDIType.TAB:
@@ -468,6 +483,7 @@ class ConfigFileHandler:
 
     def load_config(self):
         """Load and validate configuration file"""
+        
         self.key_index = 0
         self.shift = False
         self.config_errors = []
@@ -553,6 +569,7 @@ class DisplayManager:
 
     def _init_display(self):
         """Initialize display layout"""
+        
         main_group = displayio.Group()
         self.macropad.display.root_group = main_group
 
@@ -620,6 +637,7 @@ class StateManager:
 
     def update_encoder_mode(self, new_mode):
         """Update encoder mode with timed reset"""
+        
         self.encoder_mode = new_mode
         current_time = time.time()
 
@@ -703,7 +721,8 @@ class EVMController:
         print("Pad Controller Ready")
 
     def _init_midi(self, key_cache):
-        """Initialize MIDI connections"""        
+        """Initialize MIDI connections"""
+        
         print("Preparing Macropad Midi")
 
         midi = adafruit_midi.MIDI(
@@ -716,12 +735,14 @@ class EVMController:
 
     def _init_macropad(self):
         """Initialize MacroPad hardware"""
+        
         print("Preparing MacroPad Display")
         self.macropad = MacroPad(rotation=0)
         self.state.encoder_position = self.macropad.encoder
 
     def _preset_pixels(self):
         """Set pixel colors based on configuration"""
+        
         for pixel in range(12):
             if self.config_handler.config_error:
                 self.macropad.pixels[pixel] = Colors.RED
@@ -744,6 +765,7 @@ class EVMController:
 
     def _handle_key_press(self, key_number):
         """Handle key press events"""
+        
         try:
             key_id = self.config.get_key(key_number)
             lookup_key, midi_key, midi_value = self.key_cache.get_key_midi(key_id, self.state.shift_mode)
@@ -787,6 +809,7 @@ class EVMController:
             
     def _handle_encoder_change(self, direction):
         """Handle encoder rotation"""
+        
         self.state.encoder_sign = not self.state.encoder_sign
         current_time = time.time()
 
@@ -817,6 +840,7 @@ class EVMController:
 
     def _process_tempo(self, direction):
         """Process tempo up/down commands"""
+        
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
             midi_value = self.key_cache.pedal_midis["Tempo Up"]
@@ -830,6 +854,7 @@ class EVMController:
 
     def _process_master_volume(self, direction):
         """Process volume up/down commands"""
+        
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
             self.display.update_text(3, "KNOB: Volume Up{}".format(sign))
@@ -840,6 +865,7 @@ class EVMController:
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
+        
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
             midi_value = self.key_cache.tab_midis["DIAL_UP"]
@@ -853,6 +879,7 @@ class EVMController:
 
     def _handle_encoder_switch(self):
         """Handle encoder switch press. Modes 0:Rotor, 1:Tempo, 2:Volume, 3:Dial (disabled)"""
+        
         self.state.encoder_mode = self.state.encoder_mode + 1
         if self.state.encoder_mode > 2: self.state.encoder_mode = 0
         current_time = time.time()
@@ -877,6 +904,7 @@ class EVMController:
 
     def _update_display(self):
         """Update display based on timeouts"""
+        
         timeout_type = self.state.check_timeouts()
 
         if timeout_type == "timeout_tempo" or timeout_type == "timeout_volume":
@@ -890,6 +918,7 @@ class EVMController:
 
     def _update_pixels(self):
         """Update pixel colors for lit keys"""
+        
         for pixel in range(12):
             if self.state.lit_keys[pixel]:
                 self.macropad.pixels[self.config.get_key(pixel)] = Colors.WHITE
@@ -899,8 +928,6 @@ class EVMController:
         
         key_start_time = 0
         key_hold_timer = 0.25
-        shift_start_time  = 0      
-        shift_hold_timer = 0.25
         
         while True:
             try:
@@ -925,13 +952,13 @@ class EVMController:
                             # print("Shift mode: Active Shift")
                         self._handle_key_press(key_event.key_number)        # Send any key MIDI message
                     key_start_time = time.time()                    
-
+                    continue
 
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
                     if key_event.key_number == VARIATION_KEY:
-                        if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > shift_hold_timer):
+                        if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - shift_start_time) > self.config.shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
                             self.display.update_text(9, "Layer: Shift Lock")
                             # print("Shift mode: Active Lock")
@@ -945,11 +972,12 @@ class EVMController:
                             self._preset_pixels()
                                                 
                     elif key_event.key_number == TUNE_KEY: 
-                        if (time.time() - key_start_time) > key_hold_timer:
+                        if (time.time() - key_start_time) > self.config.tune_hold_timer:
                             print("Starting test tune")
                             self.display.update_text(9, "CHN #5: Test Tune")
                             self.midi_handler.test_connectivity()
                             self.display.update_text(9, "")        
+                    continue
                             
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
@@ -977,6 +1005,7 @@ if __name__ == "__main__":
     try:
         controller = EVMController()
         controller.run()
+        
     except Exception as e:
         print("Fatal error: {}".format(e))
         # Try to display error if possible
