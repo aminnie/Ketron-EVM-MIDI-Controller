@@ -1057,6 +1057,7 @@ class EVMController:
         """Process Quad Encoder Volumes"""
         
         list_all_voices = [SliderCC.BASS_CC, SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
+        list_upper_voices = [SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
         list_lowers_voices = [SliderCC.LOWERS_CC]
         list_bass_voices = [SliderCC.BASS_CC]
 
@@ -1066,9 +1067,9 @@ class EVMController:
             for index, ccCode in enumerate(list_all_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 1 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB3: All Vol 0")
+            self.display.update_text(9, f"KNB3: Upper Vol 0")
             volume = 0x00
-            for index, ccCode in enumerate(list_all_voices):
+            for index, ccCode in enumerate(list_upper_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 2 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
             self.display.update_text(9, f"KNB2: Lower Vol 0")
