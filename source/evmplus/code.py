@@ -872,6 +872,9 @@ class EVMController:
             # No MIDI message sent since we do not know if the EVM is online yet
             self.preset_quad_positions()
 
+            # Default all encoder starting volumes to 96
+            self.preset_quad_volumes(96)
+
             print("Quad Encoders configured")
             return True
             
@@ -1057,29 +1060,32 @@ class EVMController:
         """Process Quad Encoder Volumes"""
         
         list_all_voices = [SliderCC.BASS_CC, SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
+        list_manual_voices = [SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
         list_upper_voices = [SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
-        list_lowers_voices = [SliderCC.LOWERS_CC]
+        list_lower_voices = [SliderCC.LOWERS_CC]
         list_bass_voices = [SliderCC.BASS_CC]
 
         if encoder_number == 0 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB4: All Vol 96")
+            self.display.update_text(9, f"KNB4: Man Vol 96")
             volume = 0x60
             for index, ccCode in enumerate(list_all_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            self.preset_quad_volumes(volume)
         elif encoder_number == 1 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB3: Upper Vol 0")
+            self.display.update_text(9, f"KNB3: All Vol 0")
+            volume = 0x00
+            for index, ccCode in enumerate(list_all_voices):
+                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            self.preset_quad_volumes(volume)
+        elif encoder_number == 2 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
+            self.display.update_text(9, f"KNB2: Uppers Vol 0")
             volume = 0x00
             for index, ccCode in enumerate(list_upper_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-        elif encoder_number == 2 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB2: Lower Vol 0")
-            volume = 0x00
-            for index, ccCode in enumerate(list_lowers_voices):
-                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 3 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB1: Bass Vol 0")
+            self.display.update_text(9, f"KNB1: Lowers Vol 0")
             volume = 0x00
-            for index, ccCode in enumerate(list_bass_voices):
+            for index, ccCode in enumerate(list_lower_voices):
                 self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
         
         # Remember the last encoder switch pressed to avoid duplicate triggers, but re-enable via timer
@@ -1119,6 +1125,13 @@ class EVMController:
         for n, rotary_pos in enumerate(positions):
             self.quad_last_positions[n] = rotary_pos
             self.quad_last_positions_shift[n] = rotary_pos
+                        
+    def preset_quad_volumes(self, volume):
+        """Preset all quad volumes on each shift layer state to volume value - mostly all 0 or all 96"""
+
+        for n in range(4):
+            self.state.quad_volumes[n] = volume
+            self.state.quad_volumes_shift[n] = volume
                         
     def _handle_quadencoder(self):
         """Handle quad encoder rotary encoders and switchs press."""
@@ -1224,17 +1237,23 @@ class EVMController:
                 key_event = self.macropad.keys.events.get()
                 
                 # Pressed: Check for potential Shift Key operation. If Variation key pressed and held in, then
-                # shift key is pending and no MIDI "VARIATION" send until key release
+                # shift key is pending and no MIDI Variation send until key release
                 if key_event and key_event.pressed:
                     self.last_key_pressed = key_event.key_number
                     
                     if key_event.key_number == VARIATION_KEY:
-                        self.state.shift_mode = ShiftKeyMode.PENDING
-                        # print("Shift mode: Pending")
-                        
-                        self.state.lit_keys[key_event.key_number] = True
-                        self.state.led_start_time = time.time()
-                        self.shift_start_time = time.time()
+                        if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
+                            # print("Shift mode: Off")
+                            self.state.shift_mode = ShiftKeyMode.OFF                        
+                            self.display.update_text(9, "")
+                            self._preset_pixels()
+                            self.preset_quad_positions()                        
+                        else:
+                            self.state.shift_mode = ShiftKeyMode.PENDING
+                            # print("Shift mode: Pending")                        
+                            self.state.lit_keys[key_event.key_number] = True
+                            self.state.led_start_time = time.time()
+                            self.shift_start_time = time.time()
                     else:
                         # Other non VAR/Shift keys
                         if self.state.shift_mode == ShiftKeyMode.PENDING:
@@ -1255,7 +1274,6 @@ class EVMController:
                             self._preset_pixels()
                             self.preset_quad_positions()
                             # print("Shift mode: Active Lock")
-
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
                             # Send VAR MIDI message, but only if no other key pressed during shift mode
                             if self.last_key_pressed == VARIATION_KEY:

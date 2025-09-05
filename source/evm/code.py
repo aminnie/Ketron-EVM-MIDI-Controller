@@ -941,12 +941,18 @@ class EVMController:
                     self.last_key_pressed = key_event.key_number
 
                     if key_event.key_number == VARIATION_KEY:
-                        self.state.shift_mode = ShiftKeyMode.PENDING
-                        # print("Shift mode: Pending")
-                        
-                        self.state.lit_keys[key_event.key_number] = True
-                        self.state.led_start_time = time.time()
-                        self.shift_start_time = time.time()
+                        if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
+                            # print("Shift mode: Off")
+                            self.state.shift_mode = ShiftKeyMode.OFF                        
+                            self.display.update_text(9, "")
+                            self._preset_pixels()
+                            self.preset_quad_positions()                        
+                        else:
+                            self.state.shift_mode = ShiftKeyMode.PENDING
+                            # print("Shift mode: Pending")                        
+                            self.state.lit_keys[key_event.key_number] = True
+                            self.state.led_start_time = time.time()
+                            self.shift_start_time = time.time()
                     else:
                         # Other non VAR/Shift keys
                         if self.state.shift_mode == ShiftKeyMode.PENDING:
