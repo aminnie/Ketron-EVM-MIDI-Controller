@@ -105,7 +105,7 @@ difference() {
 // Add cover supports into the case hole
 translate([pcb_length/2-4, pcb_width/2-2, 0])   // x and y top
     cube([5, 3, 12]);
-translate([-(pcb_length/2+1), pcb_width/2-2, 0])    // -x and y top
+translate([-(pcb_length/2), pcb_width/2-2, 0])    // -x and y top
     cube([5, 3, 12]);
 translate([pcb_length/2-4, -(pcb_width/2+1), 0])    // x and -y bottom
     cube([5, 3, 12]);
@@ -117,7 +117,7 @@ translate([10, -(pcb_width/2+1), 0])
 translate([-5, pcb_width/2-2, 0])   // y top center
     cube([10, 3, 12]);
 translate([pcb_length/2-2, -pcb_width/2 + 2, 0])   // x center 
-    cube([3, 10, 12]);
+    cube([3, 15, 12]);
 translate([-pcb_length/2, -pcb_width/2 + 1, 0])   // quad center 
     cube([3, 10, 12 - 3.2]);
 // =============================================================================
@@ -261,7 +261,7 @@ module logo_text() {
 
 // Indent for the Quad Encoder Stemma connector & cable in the base
 module stemma_hole() {
-    translate([15, -35, 0.5])
+    translate([15, -35, 1])
         cube([10, 10, 10]);
 }
 
