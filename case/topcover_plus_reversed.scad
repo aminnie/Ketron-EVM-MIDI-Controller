@@ -44,7 +44,7 @@ keys_offset_y = -13;     // Y offset of key grid center (negative = toward botto
 
 // LCD/OLED display parameters
 lcd_width = 31;            // Width of LCD cutout (mm)
-lcd_height = 17;           // Height of LCD cutout (mm)
+lcd_height = 17.5;           // Height of LCD cutout (mm)
 lcd_corner_radius = 1;     // Corner radius for LCD hole
 //lcd_offset_x = -11;        // X position relative to center
 lcd_offset_x = 11;        // X position relative to center
@@ -128,7 +128,7 @@ module base_cover() {
         }
         
         // Wrap the open encoder shaft
-        encoder_shaft_wrap();                        
+        //encoder_shaft_wrap();                        
     }
 }
 
@@ -163,7 +163,7 @@ module quad_encoder_holes() {
     key_rows = 4;
     key_cols = 1;
 
-    start_x = keys_offset_x - (key_switch_spacing * (key_cols - 1) / 2) + qencoder_width/2 - 40 - 3;
+    start_x = keys_offset_x - (key_switch_spacing * (key_cols - 1) / 2) + qencoder_width/2 - 40 - 4;
     start_y = keys_offset_y + (key_switch_spacing * (key_rows - 1) / 2);
     
     // Create grid of holes

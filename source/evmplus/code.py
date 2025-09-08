@@ -875,6 +875,12 @@ class EVMController:
             # Default all encoder starting volumes to 96
             self.preset_quad_volumes(96)
 
+            # To do: Light up the Encoder knobs initially
+            #self.quad_pixels[0] = 0xFFFFFF
+            #self.quad_pixels[1] = 0xFFFFFF
+            #self.quad_pixels[2] = 0xFFFFFF
+            #self.quad_pixels[3] = 0xFFFFFF
+
             print("Quad Encoders configured")
             return True
             

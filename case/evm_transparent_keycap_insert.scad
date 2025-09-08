@@ -1,6 +1,5 @@
 // Modified keycap based on the imported STL file below to be used with EVM Arranger
 
-
 rotate([180, 0, 0])
 translate([0, 0, -4.5])
 union() {
@@ -12,12 +11,17 @@ union() {
     
     // Add a few inserts to prevent spotty LED shine through top cover
     color("red")
-    translate([-6.5, -6.5, 3.25])
+    translate([-6.5, -6.5, 3.50])
         cube([4.5, 3.5, 0.4]);
 
     color("red")
-    translate([2, -6.5, 3.25])
+    translate([2, -6.5, 3.50])
         cube([4.5, 3.5, 0.4]);
+
+    // Make the LED window narrower
+    //color("blue")
+    //translate([-5, -4.25, 3.25])
+    //    cube([10, 1.25, 1.25]);
 
     //color("red")
     //translate([-6, 3, 3.25])
@@ -36,3 +40,4 @@ union() {
             cube([13, 13, 3]);
     }
 }
+

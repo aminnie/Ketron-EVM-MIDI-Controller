@@ -74,6 +74,8 @@ difference() {
     // Cut out encoder shaft holes
     quad_encoder_round_holes();    
 
+    quad_encoder_led_holes();
+
     main_encoder_round_hole();
 
     logo_text();
@@ -189,9 +191,30 @@ module quad_encoder_round_holes() {
 }
 
 // Seperated: Create Encoder 6mm Shaft through hole
+module quad_encoder_led_holes() {
+
+    encoder_count = 4;
+    x_offset_start = 18 + 15;
+    x_offset_incr = 19;
+    
+    for (row = [0 : encoder_count - 1]) {
+
+        color("red") translate([x_offset_start - x_offset_incr * row, 4, -0.5]) {
+            // Through hole for encoder shaft
+            cylinder(
+                h = encoder_shaft_z, 
+                d = 3, //light hole diameter, 
+                $fn = 16
+            );        
+        }
+        
+    }
+}
+
+// Seperated: Create Encoder 6mm Shaft through hole
 module main_encoder_round_hole() {
     
-    color("red") translate([-38, 21, -0.5]) {
+    color("red") translate([-40, 21, -0.5]) {
             // Through hole for encoder shaft
             cylinder(
                 h = encoder_shaft_z + 2, 

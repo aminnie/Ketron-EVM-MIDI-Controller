@@ -91,6 +91,6 @@ difference() {
     // Create a tapering cube hole on inside
     color("red")
         translate([0, 0, -5])
-        tapered_cube(bottom_size = [15.65, 15.65, 0.1], top_size = [14.75, 14.75, 0.1], height = 6.5);
+        tapered_cube(bottom_size = [15.65, 15.65, 0.1], top_size = [14.75, 14.75, 0.1], height = 10);
 }
 
