@@ -1065,34 +1065,63 @@ class EVMController:
     def _process_quad_switch(self, encoder_number):
         """Process Quad Encoder Volumes"""
         
+        list_style_voices = [SliderCC.STYLE_CC, SliderCC.DRUM_CC, SliderCC.REALCHORD_CC, SliderCC.CHORD_CC]
         list_all_voices = [SliderCC.BASS_CC, SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
         list_manual_voices = [SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
         list_upper_voices = [SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
         list_lower_voices = [SliderCC.LOWERS_CC]
         list_bass_voices = [SliderCC.BASS_CC]
 
-        if encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB4: Man Vol 96")
-            volume = 0x60
-            for index, ccCode in enumerate(list_all_voices):
-                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-            self.preset_quad_volumes(volume)
-        elif encoder_number == 1 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB3: All Vol 0")
-            volume = 0x00
-            for index, ccCode in enumerate(list_all_voices):
-                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-            self.preset_quad_volumes(volume)
-        elif encoder_number == 2 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB2: Uppers Vol 0")
-            volume = 0x00
-            for index, ccCode in enumerate(list_upper_voices):
-                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-        elif encoder_number == 3 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
-            self.display.update_text(9, f"KNB1: Lowers Vol 0")
-            volume = 0x00
-            for index, ccCode in enumerate(list_lower_voices):
-                self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
+        if self.state.shift_mode == ShiftKeyMode.OFF:
+            # Process volumes in base layer
+            if encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB4: Man Vol 96")
+                volume = 0x60
+                for index, ccCode in enumerate(list_all_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                self.preset_quad_volumes(volume)
+            elif encoder_number == 1 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB3: All Vol 0")
+                volume = 0x00
+                for index, ccCode in enumerate(list_all_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                self.preset_quad_volumes(volume)
+            elif encoder_number == 2 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB2: Uppers Vol 0")
+                volume = 0x00
+                for index, ccCode in enumerate(list_upper_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            elif encoder_number == 3 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB1: Lowers Vol 0")
+                volume = 0x00
+                for index, ccCode in enumerate(list_lower_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
+        
+        else:
+            # Process volumes in shift layer
+            if encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB4: Style Vol 96")
+                volume = 0x60
+                for index, ccCode in enumerate(list_style_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                self.preset_quad_volumes(volume)
+            elif encoder_number == 1 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB3: Style Vol 0")
+                volume = 0x00
+                for index, ccCode in enumerate(list_style_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                self.preset_quad_volumes(volume)
+            elif encoder_number == 2 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB2: Bass Vol 96")
+                volume = 0x60
+                for index, ccCode in enumerate(list_bass_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            elif encoder_number == 3 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
+                self.display.update_text(9, f"KNB1: Bass Vol 0")
+                volume = 0x00
+                for index, ccCode in enumerate(list_bass_voices):
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
+            
         
         # Remember the last encoder switch pressed to avoid duplicate triggers, but re-enable via timer
         self.state.last_quad_switch = encoder_number
