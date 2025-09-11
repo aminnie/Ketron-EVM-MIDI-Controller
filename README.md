@@ -2,7 +2,9 @@
 
 This MIDI Controller for the Ketron EVM Sound Module is based on the Adafruit MacroPad RP2040 circuit board:
  
-- Adadfruit kit: https://www.adafruit.com/product/5128
+- Adadfruit kits supported: 
+   - Macropad Starter kit at https://www.adafruit.com/product/5128 or the
+   - Macropad Barebones board at https://www.adafruit.com/product/5100
 - Learning more about the Macropad, assembly instructions, and how to download custom code into the device: https://learn.adafruit.com/adafruit-macropad-rp2040. 
 - The Starter kit can also be purchased from vendors such as Digikey: https://www.digikey.com/en/products/detail/adafruit-industries-llc/5128/14635377
 - Adafruit Midi Library: https://docs.circuitpython.org/projects/midi/en/latest/api.html#adafruit_midi.system_exclusive.SystemExclusive.from_bytes
@@ -95,7 +97,7 @@ See the Adafruit learning website for detailed instructors on how to
 -  Prepare the board to load our custom solution in the code.py and keymap.cfg file into the controller board.
 -  You have the following options:
    - Simply copy the code files from a local disk to the MacroPad USB drive mounted as 'CIRCUITPY'.
-   - Use an editor such as NotePad+ to open the extracted controller files from the download and do a SaveAs into the CIRCUITPY drive. This often is the easiest way to update the code.
+   - Use an text editor such as NotePad++ to open the extracted controller files from the download and do a SaveAs into the CIRCUITPY drive. This often is the easiest way to update the code.
    - Download the Mu Editor to your PC. Mu will connect to the Macropad board and allow you up/download and edit the code.py file. It also has a REPL terminal that can be used to interact with the board during development and debugging. 
 
 ### Testing the EVM Controller:
