@@ -61,7 +61,8 @@ class Colors:
     PURPLE = 0x800080
     YELLOW = 0x808000
     TEAL = 0x004040
-
+    OFFWHITE = 0xA47474
+    
 # Color mapping dictionary
 COLOR_MAP = {
     'red': Colors.RED,
@@ -747,7 +748,9 @@ class EVMController:
             if self.config_handler.config_error:
                 self.macropad.pixels[pixel] = Colors.RED
             elif pixel == self.config.get_key(VARIATION_KEY):  # Variation key
-                if self.state.encoder_mode == EncoderMode.TEMPO:
+                if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
+                    self.macropad.pixels[pixel] = Colors.OFFWHITE                    
+                elif self.state.encoder_mode == EncoderMode.TEMPO:
                     self.macropad.pixels[pixel] = Colors.YELLOW
                 elif self.state.encoder_mode == EncoderMode.VOLUME:
                     self.macropad.pixels[pixel] = Colors.PURPLE
