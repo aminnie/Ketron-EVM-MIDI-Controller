@@ -125,7 +125,7 @@ Original Adafruit Macropad RP2040:
 
 ![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
 
-Difference between the Adafruit MacroPad standard order and the custom ordered unit: Low profile key switches and custom key caps. A custom 3D printed case enclosure that hides the electronics components. And of course a MIDI controller solution customozed for the Ketron Event series.
+Difference between the Adafruit MacroPad standard order and the custom ordered unit: Low profile key switches and custom key caps. A custom 3D printed case enclosure that hides the electronics components. And of course a MIDI controller solution customized for the Ketron Event series.
 
 #### Variations: 
 - A version of the EVM controller is available that supports four additional quad encoders used to manage style and voice volumes.
