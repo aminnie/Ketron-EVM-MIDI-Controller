@@ -328,9 +328,16 @@ class KeyLookupCache:
 
         self.user_macro_midis = [
             {
-                "PLUGGED": ["Bass & Drum"],
-                "UNPLUGGED": ["Drum Mute", "Bass Mute"],
-                "VOICEMUTE": ["Bass Mute", "Low. Mute", "Lead Mute"]
+                "UNPLUGGED":["FILL & DRUM IN"],
+                "PLUGGED":["Drum Mute"],
+                "FArr.A":["FILL","Arr.A"],
+                "FArr.B":["FILL","Arr.B"],
+                "FArr.C":["FILL","Arr.C"],
+                "FArr.D":["FILL","Arr.D"],
+                "SStop":["Start/Stop"],
+                "SStop":["Start/Stop"],
+                "SStop":["Start/Stop"],
+                "SStop":["Start/Stop"]
             }
         ]
 

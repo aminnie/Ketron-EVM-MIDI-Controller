@@ -184,14 +184,30 @@ class MIDIHandler:
             return False
 
     def send_macro_sysex(self, midi_key):
-        """Send one or more macro SysEx message(s)"""
-        
+        """Send one or more macro list values as SysEx Pedal or Tab message(s)"""
+
         try:
-            for macro in self.key_cache.user_macro_midis:
-                for value in macro.get(midi_key, []):
-                    hex_value = self.key_cache.pedal_midis.get(value, "")
-                    if hex_value:
-                        self.send_pedal_sysex(hex_value)
+            
+            for macro, items in self.key_cache.user_macro_midis.items():
+                #print(f"Macro: {macro}")
+                if macro == midi_key:
+                    for item in items:
+                        #print(f"  - {item}")
+                        if ':' in item:
+                            macro_parts = item.split(':')
+                            #print(f"macro_parts: {macro_parts}")
+                            if len(macro_parts) >= 2:
+                                lookup_key = int(macro_parts[0].strip())
+                                value = macro_parts[1].strip()
+
+                                if lookup_key == MIDIType.PEDAL:
+                                    hex_value = self.key_cache.pedal_midis.get(value, "")
+                                    if hex_value:
+                                        self.send_pedal_sysex(hex_value)
+                                elif lookup_key == MIDIType.TAB:
+                                    hex_value = self.key_cache.tab_midis.get(value, "")                            
+                                    if hex_value:
+                                        self.send_tab_sysex(hex_value)
             return True
         except Exception as e:
             print("Error sending macros SysEx: {}".format(e))
@@ -263,13 +279,18 @@ class KeyLookupCache:
             Colors.TEAL, Colors.RED, Colors.ORANGE, Colors.TEAL
         ]
 
-        self.user_macro_midis = [
-            {
-                "PLUGGED": ["Bass & Drum"],
-                "UNPLUGGED": ["Drum Mute", "Bass Mute"],
-                "VOICEMUTE": ["Bass Mute", "Low. Mute", "Lead Mute"]
-            }
-        ]
+        self.user_macro_midis = {
+            "UNPLUGGED":["0:FILL & DRUM IN"],
+            "PLUGGED":["0:Drum Mute"],
+            "FArr.A":["1:FILL","0:Arr.A"],
+            "FArr.B":["1:FILL","0:Arr.B"],
+            "FArr.C":["1:FILL","0:Arr.C"],
+            "FArr.D":["1:FILL","0:Arr.D"],
+            "SStop":["0:Start/Stop"],
+            "SStop":["0:Start/Stop"],
+            "SStop":["0:Start/Stop"],
+            "SStop":["0:Start/Stop"]
+        }
 
         # Ketron Pedal and Tab MIDI lookup dictionaries
         self.pedal_midis = self._init_pedal_midis()
@@ -439,9 +460,10 @@ class ConfigFileHandler:
             print("Error reading {}: {}".format(filename, e))
             return []
 
-    def parse_config_line(self, line):
-        """Parse a single config line with validation"""
+    def parse_key_config_line(self, line):
+        """Parse a single key config line with validation"""
         
+        #key00=1:VARIATION:blue
         try:
             line = line.strip()
             if line.startswith('#') or not line:
@@ -450,22 +472,64 @@ class ConfigFileHandler:
             if '=' not in line or line.count(':') < 2:
                 raise ValueError("Invalid format")
 
-            parts = line.split('=', 1)
-            if len(parts) != 2 or not parts[0].startswith('key'):
+            line_parts = line.split('=', 1)
+            if len(line_parts) != 2 or not line_parts[0].startswith('key'):
                 raise ValueError("Invalid key format")
 
-            value_parts = parts[1].split(':')
-            if len(value_parts) != 3:
+            key_parts = line_parts[1].split(':')
+            if len(key_parts) != 3:
                 raise ValueError("Invalid value format")
 
             return {
-                'key': parts[0],
-                'type': int(value_parts[0]),
-                'command': value_parts[1],
-                'color': value_parts[2]
+                'key': line_parts[0],
+                'type': int(key_parts[0]),
+                'command': key_parts[1],
+                'color': key_parts[2]
             }
         except (ValueError, IndexError) as e:
-            print("Error parsing line '{}': {}".format(line, e))
+            print("Error parsing key line '{}': {}".format(line, e))
+            return None
+
+    def parse_macro_config_line(self, line):
+        """Parse a single macro config line with validation"""
+        
+        #mac00=PLUGGED:[1:FILL,0:Sostenuto]
+        try:
+            line = line.strip()
+            if line.startswith('#') or not line:
+                return None
+
+            if '=' not in line:
+                raise ValueError("Invalid format")
+
+            line_parts = line.split('=', 1)
+            if len(line_parts) != 2 or not line_parts[0].startswith('mac'):
+                raise ValueError("Invalid macro format")
+
+            # Extract the macro key
+            macro_parts = line_parts[1].split(':[')
+            if len(macro_parts) != 2:
+                raise ValueError("Invalid macro format")
+
+            # Extract the macro list
+            # Split by ',' and strip trailing ']' after last macro in list
+            macro_list = []
+            list_parts = macro_parts[1].split(',') 
+            for part in list_parts:
+                str_part = str(part).replace("]","")                
+                macro_list.append(str_part)
+
+            #print(f"macro: {str(line_parts[0])}")
+            #print(f"macro_key: {str(macro_parts[0])}")
+            #print(f"macro_list: {macro_list}")
+            
+            return {
+                'macro': str(line_parts[0]),
+                'macro_key': str(macro_parts[0]),
+                'macro_list': macro_list,
+            }
+        except (ValueError, IndexError) as e:
+            print("Error parsing macro line '{}': {}".format(line, e))
             return None
 
     def validate_midi_string(self, midi_type, command):
@@ -475,12 +539,14 @@ class ConfigFileHandler:
             return command in self.key_cache.pedal_midis
         elif midi_type == MIDIType.TAB:
             return command in self.key_cache.tab_midis
-        elif midi_type == MIDIType.MACRO:
-            for macro in self.key_cache.user_macro_midis:
-                #print(f"Checking command: {command}, {macro}, return {macro.get(command, [])}, type {isinstance(macro.get(command, []), list)}")
-                if command in macro: return True
+            
+        # To do: Initially macros hard coded, now loaded after keys. Validate after macros loaded
+        #elif midi_type == MIDIType.MACRO:
+        #    for macro in self.key_cache.user_macro_midis:
+        #        #print(f"Checking command: {command}, {macro}, return {macro.get(command, [])}, type {isinstance(macro.get(command, []), list)}")
+        #        if command in macro: return True
                     
-        return False
+        return True
 
     def load_config(self):
         """Load and validate configuration file"""
@@ -488,7 +554,10 @@ class ConfigFileHandler:
         self.key_index = 0
         self.shift = False
         self.config_errors = []
-
+        
+        # print(f"macros list: {self.key_cache.user_macro_midis}")
+        self.key_cache.user_macro_midis.clear()
+        
         try:
             lines = self.safe_file_read("/keymap.cfg")
             if not lines:
@@ -501,54 +570,73 @@ class ConfigFileHandler:
 
         # Load Layer: Base
         for line_num, line in enumerate(lines, 1):
-            parsed = self.parse_config_line(line)
-            if parsed is None:
-                # print(f"Skipping line: {line}")
-                continue
-
+            
             try:
-                # Validate MIDI command
-                if not self.validate_midi_string(parsed['type'], parsed['command']):
-                    raise ValueError("Invalid MIDI command: {}".format(parsed['command']))
+                if "key" in line:
+                    parsed = self.parse_key_config_line(line)
+                    if parsed is None:
+                        # print(f"Skipping line: {line}")
+                        continue
 
-                mapped_key_index = self.config.get_key(self.key_index)
+                    # Validate MIDI command
+                    if not self.validate_midi_string(parsed['type'], parsed['command']):
+                        raise ValueError("Invalid MIDI command: {}".format(parsed['command']))
 
-                # Apply configuration
-                if self.shift == False :
+                    mapped_key_index = self.config.get_key(self.key_index)
 
-                    # print(f"Base - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
+                    # Apply configuration
+                    if self.shift == False :
 
-                    # Set MIDI string and color for base layer 
-                    midi_string = "{}:{}".format(parsed['type'], parsed['command'])
-                    self.key_cache.macropad_key_map[mapped_key_index] = midi_string
+                        # print(f"Base - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
 
-                    # Set color
-                    color_code = self.key_cache.validate_color_string(parsed['color'])
-                    self.key_cache.macropad_color_map[mapped_key_index] = color_code
+                        # Set MIDI string and color for base layer 
+                        midi_string = "{}:{}".format(parsed['type'], parsed['command'])
+                        self.key_cache.macropad_key_map[mapped_key_index] = midi_string
 
-                elif self.shift == True:
+                        # Set color
+                        color_code = self.key_cache.validate_color_string(parsed['color'])
+                        self.key_cache.macropad_color_map[mapped_key_index] = color_code
 
-                    # print(f"Shift - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
+                    elif self.shift == True:
 
-                    # Set MIDI string and color in shift layer
-                    midi_string = "{}:{}".format(parsed['type'], parsed['command'])
-                    self.key_cache.macropad_key_map_shift[mapped_key_index] = midi_string
+                        # print(f"Shift - Number: {line_num}, Line: {line}, Mapped Key Index: {mapped_key_index}")
 
-                    # Set color
-                    color_code = self.key_cache.validate_color_string(parsed['color'])
-                    self.key_cache.macropad_color_map_shift[mapped_key_index] = color_code
+                        # Set MIDI string and color in shift layer
+                        midi_string = "{}:{}".format(parsed['type'], parsed['command'])
+                        self.key_cache.macropad_key_map_shift[mapped_key_index] = midi_string
 
-                # Read all 24 keys in the Base and Shift Layers. resetting the key index to start with shift layer
-                self.key_index += 1
-                if (self.key_index > 11) and (self.shift == False):
-                    self.key_index = 0
-                    self.shift = True
+                        # Set color
+                        color_code = self.key_cache.validate_color_string(parsed['color'])
+                        self.key_cache.macropad_color_map_shift[mapped_key_index] = color_code
 
+                    # Read all 24 keys in the Base and Shift Layers. resetting the key index to start with shift layer
+                    self.key_index += 1
+                    if (self.key_index > 11) and (self.shift == False):
+                        self.key_index = 0
+                        self.shift = True
+
+                elif "mac" in line:                    
+                    parsed = self.parse_macro_config_line(line)
+                    if parsed is None:
+                        # print(f"Skipping line: {line}")
+                        continue
+
+                    # print(f"got macro all: {parsed}")
+                    # print(f"got macro key : {parsed['macro_key']}")
+                    # print(f"got macro value: {parsed['macro_list']}")
+                    
+                    # Add a new macro entry in dictionary
+                    self.key_cache.user_macro_midis[parsed['macro_key']] = parsed['macro_list']
+
+                    # print(f"macro is {self.key_cache.user_macro_midis[parsed['macro_key']]}")
+                    # print(self.key_cache.user_macro_midis)
+                    
             except Exception as e:
+                print(f"Exception in line {line_num}: {line}")
                 self.config_errors.append("Line {}: {}".format(line_num, e))
 
         if self.config_errors:
-            print("Configuration errors:")
+            print("Configuration file parsing errors:")
             for error in self.config_errors[:5]:  # Limit error display
                 print("  {}".format(error))
             self.config_error = True
@@ -949,7 +1037,6 @@ class EVMController:
                             self.state.shift_mode = ShiftKeyMode.OFF                        
                             self.display.update_text(9, "")
                             self._preset_pixels()
-                            self.preset_quad_positions()                        
                         else:
                             self.state.shift_mode = ShiftKeyMode.PENDING
                             # print("Shift mode: Pending")                        
