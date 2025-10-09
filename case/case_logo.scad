@@ -12,7 +12,7 @@
 // PARAMETERS
 // =============================================================================
 
-logotext = "AJAMSONIC HS13";
+logotext = "AJAMSONIC  HS13";
 
 // Adafruit Macropad RP2040 PCB parameters
 pcb_length = 105;          // RP2040 PCB length (mm)

@@ -13,7 +13,7 @@
 // PARAMETERS
 // =============================================================================
 
-logotext = "AJAMSONIC HS13+";
+logotext = "AJAMSONIC  HS13+";
 
 // Overall cover dimensions of added Quad Encoder
 qencoder_width = 25;      // Width of Quad Encoder (mm)
@@ -109,6 +109,8 @@ translate([-(pcb_length/2), pcb_width/2-2, 0])    // -x and y top
     cube([5, 3, 12]);
 translate([pcb_length/2-4, -(pcb_width/2+1), 0])    // x and -y bottom
     cube([5, 3, 12]);
+translate([pcb_length/2-10, -(pcb_width/2+1)+15, 0])    // x and -y bottom
+    cube([10, 3, 12]);
 // Encoder Support
 translate([-(pcb_length/2+1), -(pcb_width/2+1), 0]) // -x and -y bottom
     cube([10, 3, 12 - 3.2]);
