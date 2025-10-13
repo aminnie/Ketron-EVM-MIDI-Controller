@@ -113,7 +113,7 @@ class EVMConfig:
         #self.version = "1.2"
         self.display_banner =     "   AJAMSONIC HS13+   "
         self.display_sub_banner = "Pad Controller   "
-        self.version = "5.3"
+        self.version = "1.0.0"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -127,6 +127,11 @@ class EVMConfig:
         self.value_timer = 60
         self.version_timer = 15
         self.tune_hold_timer = 2
+
+        # Quad Encoder configs loaded from keymap.cfg
+        self.is_quadencoder = True
+        self.encoder_step = 8
+        self.encoder_fwd = True
 
         self.quad_switch_timer = .5
         
@@ -607,6 +612,60 @@ class ConfigFileHandler:
             print("Error parsing macro line '{}': {}".format(line, e))
             return None
 
+    def parse_var_config_line(self, line):
+        """Parse a single variable config line with validation"""
+        
+        #var00=EncQuad:True
+        try:
+            line = line.strip()
+            if line.startswith('#') or not line:
+                return None
+
+            if '=' not in line:
+                raise ValueError("Invalid format")
+
+            line_parts = line.split('=', 1)
+            if len(line_parts) != 2 or not line_parts[0].startswith('var'):
+                raise ValueError("Invalid variable format")
+
+            # Extract the variable key
+            macro_parts = line_parts[1].split(':')
+            if len(macro_parts) != 2:
+                raise ValueError("Invalid variable format")
+                
+            print(f"var line: {line_parts[1]}")
+
+            if macro_parts[0] == 'EncQuad':
+                if macro_parts[1].strip() == "True":
+                    self.config.is_quadencoder = True
+                    print(f"config encoder quad: True")
+                else: 
+                    self.config.is_quadencoder = False
+                    print(f"config encoder quad: False")
+
+            elif macro_parts[0] == 'EncStep':
+                step = int(macro_parts[1])
+                if step == 1:
+                    self.config.encoder_step = 1
+                elif step == 4:
+                    self.config.encoder_step = 4
+                else: 
+                    self.config.encoder_step = 8
+                print(f"config encoder step: {self.config.encoder_step}")
+
+            elif macro_parts[0] == 'EncFwd':
+                if macro_parts[1].strip() == "True":
+                    self.config.encoder_fwd = True
+                    print(f"config encoder fwd: True")
+                else: 
+                    self.config.encoder_fwd = False
+                    print(f"config encoder fwd: False")
+            
+            return True
+        except (ValueError, IndexError) as e:
+            print("Error parsing variable line '{}': {}".format(line, e))
+            return None
+
     def validate_midi_string(self, midi_type, command):
         """Validate MIDI command against known commands"""
         
@@ -705,7 +764,13 @@ class ConfigFileHandler:
 
                     # print(f"macro is {self.key_cache.user_macro_midis[parsed['macro_key']]}")
                     # print(self.key_cache.user_macro_midis)
-                    
+
+                elif "var" in line:                    
+                    parsed = self.parse_var_config_line(line)
+                    if parsed is None:
+                        # print(f"Skipping line: {line}")
+                        continue
+
             except Exception as e:
                 print(f"Exception in line {line_num}: {line}")
                 self.config_errors.append("Line {}: {}".format(line_num, e))
@@ -806,8 +871,8 @@ class StateManager:
         self.version_start_time = time.time()
 
         # Tracks if I2C devices is attached.
-        self.is_quadencoder = False
-        
+        self.is_quadencoder = True
+
         self.quad_volumes = [0, 0, 0, 0]
         self.quad_volumes_shift = [0, 0, 0, 0]
 
@@ -1262,8 +1327,6 @@ class EVMController:
     def _handle_quadencoder(self):
         """Handle quad encoder rotary encoders and switchs press."""
 
-        encoder_step = 8
-        
         # Negate the position to make clockwise rotation positive
         positions = [encoder.position for encoder in self.quad_encoders]
         
@@ -1275,23 +1338,35 @@ class EVMController:
                 if self.quad_switches[n].value:  
                 
                     if rotary_pos != self.quad_last_positions_shift[n]:                    
-                        # Update channel volume with new encoder position 
-                        if rotary_pos > self.quad_last_positions_shift[n]:      # Advance forward
-                            self.state.quad_volumes_shift[n] += encoder_step
-                            if self.state.quad_volumes_shift[n] > 127: self.state.quad_volumes_shift[n] = 127
+                        if self.config.encoder_fwd == True:
+
+                            # Update channel volume with new encoder position 
+                            if rotary_pos > self.quad_last_positions_shift[n]:      # Advance forward
+                                self.state.quad_volumes_shift[n] += self.config.encoder_step
                                 
-                            self._process_quad_volume(n, self.state.quad_volumes_shift[n])
-                            
-                        elif rotary_pos < self.quad_last_positions_shift[n]:    # Advance backward
-                            if self.state.quad_volumes_shift[n] == 127:
-                                self.state.quad_volumes_shift[n] -= encoder_step - 1                                
-                            else:
-                                self.state.quad_volumes_shift[n] -= encoder_step
+                            elif rotary_pos < self.quad_last_positions_shift[n]:    # Advance backward
+                                if self.state.quad_volumes_shift[n] == 127:
+                                    self.state.quad_volumes_shift[n] -= self.config.encoder_step - 1                                
+                                else:
+                                    self.state.quad_volumes_shift[n] -= self.config.encoder_step
+
+                        else:
+                            # Update channel volume with new encoder position 
+                            if rotary_pos < self.quad_last_positions_shift[n]:      # Advance forward
+                                self.state.quad_volumes_shift[n] += self.config.encoder_step
                                 
-                            if self.state.quad_volumes_shift[n] <= 0: self.state.quad_volumes_shift[n] = 0
+                            elif rotary_pos > self.quad_last_positions_shift[n]:    # Advance backward
+                                if self.state.quad_volumes_shift[n] == 127:
+                                    self.state.quad_volumes_shift[n] -= self.config.encoder_step - 1                                
+                                else:
+                                    self.state.quad_volumes_shift[n] -= self.config.encoder_step
+                       
+                        # Adjust for the max and min values
+                        if self.state.quad_volumes_shift[n] > 127: self.state.quad_volumes_shift[n] = 127
+                        if self.state.quad_volumes_shift[n] <= 0: self.state.quad_volumes_shift[n] = 0
                             
-                            self._process_quad_volume(n, self.state.quad_volumes_shift[n])
-                                                                                
+                        self._process_quad_volume(n, self.state.quad_volumes_shift[n])
+                                                            
                         # Set last position to current position after evaluating
                         self.quad_last_positions_shift[n] = rotary_pos
 
@@ -1303,24 +1378,35 @@ class EVMController:
                 # If switch not pressed, update volume for encoders 
                 if self.quad_switches[n].value:  
                     
-                    if rotary_pos != self.quad_last_positions[n]:
-                        # Update channel volume with new encoder position 
-                        if rotary_pos > self.quad_last_positions[n]:        # Advance forward
-                            self.state.quad_volumes[n] += encoder_step
-                            if self.state.quad_volumes[n] >= 127: self.state.quad_volumes[n] = 127
+                    if rotary_pos != self.quad_last_positions[n]:                        
+                        if self.config.encoder_fwd == True:                 
+                            # Update channel volume with new encoder position 
+                            if rotary_pos > self.quad_last_positions[n]:        # Advance forward
+                                self.state.quad_volumes[n] += self.config.encoder_step
 
-                            self._process_quad_volume(n, self.state.quad_volumes[n])
+                            elif rotary_pos < self.quad_last_positions[n]:      # Advance backward
+                                if self.state.quad_volumes[n] == 127:
+                                    self.state.quad_volumes[n] -= self.config.encoder_step - 1                                
+                                else:
+                                    self.state.quad_volumes[n] -= self.config.encoder_step
 
-                        elif rotary_pos < self.quad_last_positions[n]:      # Advance backward
-                            if self.state.quad_volumes[n] == 127:
-                                self.state.quad_volumes[n] -= encoder_step - 1                                
-                            else:
-                                self.state.quad_volumes[n] -= encoder_step
+                        else:
+                            # Update channel volume with new encoder position 
+                            if rotary_pos < self.quad_last_positions[n]:        # Advance forward
+                                self.state.quad_volumes[n] += self.config.encoder_step
 
-                            if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
+                            elif rotary_pos > self.quad_last_positions[n]:      # Advance backward
+                                if self.state.quad_volumes[n] == 127:
+                                    self.state.quad_volumes[n] -= self.config.encoder_step - 1                                
+                                else:
+                                    self.state.quad_volumes[n] -= self.config.encoder_step
+                            
+                        # Adjust for the max and min values
+                        if self.state.quad_volumes[n] > 127: self.state.quad_volumes[n] = 127
+                        if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
 
-                            self._process_quad_volume(n, self.state.quad_volumes[n])
-                                    
+                        self._process_quad_volume(n, self.state.quad_volumes[n])
+                                                            
                         # Set last position to current position after evaluating
                         self.quad_last_positions[n] = rotary_pos
 
