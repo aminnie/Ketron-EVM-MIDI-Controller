@@ -54,9 +54,9 @@ Row 1:
 
 Row 2:
 - 1/2 Bar (blue)
-- Plugged (orange) (drums and bass only)
-- UnPlugged (orange) (style, real chord and chord only)
-- Lowers Mute (blue)
+- Plugged (orange) (drums and bass only macro)
+- UnPlugged (orange) (style, real chord and chord only macro)
+- RHYTHM (blue) (Rhythm only macro)
 
 Row 3:
 - Variation/Shift (blue)
@@ -66,14 +66,13 @@ Row 3:
 
 #### Activating the Shift Layaer
 
-The shift layer operates in two modes - not unlike a typical keyboard: 
-- When you press Variation/Shift and immediately follow with a second key press while holding Varation/Shioft 
-down, the key mapping is called up from the shift layer. This allows for quick activations for e.g. 1/2 Bar)
-with a familiar keyboard shift action. 
-- When you press annd hold Variation/Shift for 200ms plus, the keypad behavior is similar to caps lock 
-on a keyboard. The shift layer is activated and keys such as Value Up/Down can be pressed until the
+The shift layer operates in two modes - not unlike a typical PC keyboard: 
+- When you press Variation/Shift and while holding it follow with a second key press, the key mapping from the shift layer is sent. 
+This allows for quick activations for e.g. 1/2 Bar with a familiar keyboard shift action. 
+- When you press and hold Variation/Shift for 200ms or longer, the keypad behavior is similar to caps lock 
+on a PC keyboard. The shift layer is activated and keys such as Value Up/Down can be pressed until the
 Variation/Shift key is pressed again.
-- The Varation key continues to support the EVM Variation function of pressed and the conditions above not met.
+- The Varation key continues to support the EVM Variation function if pressed and the above shift conditions are not met.
 
 ### Controller Primary Encoder Configration:
 
@@ -89,7 +88,7 @@ Notes:
 ### Connecting the EVM Controller to your EVM Module:
 
 - The Ketron EVM expects all attached MIDI devices to be powered up before you start it up. It will not detect devices on the USB or MIDI ports that is not switched on or added after EVM power up.
-- The Macropad has a single USB port that is used to connect to the EVM, and as a result of the EVM  power up connect requirement, we have to power it via a USB hub that provides external power. This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM.
+- The Macropad has a single USB port that is used to connect to the EVM, and as a result of the EVM  power up connect requirement, we have to power it via a USB hub that provides external power. This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM. Some Y-splitter USB cables may also work if you prefer to connect a cell phone charger battery for instance to power the unit.
 
 ### Loading customized code into the EVM Controller:
 
@@ -129,7 +128,7 @@ Difference between the Adafruit MacroPad standard order and the custom ordered u
 
 #### Variations: 
 - A version of the EVM controller is available that supports four additional quad encoders used to manage style and voice volumes.
-- A version of the controller code is also available that emits only MIDI CC messages and disables the USB drive.
+- A version of the controller code is also available that emits only MIDI CC messages for instruments that can be coded via MIDI CC messages.
 
 For more information, support, or a completed unit please contact: a_minnie@hotmail.com
 

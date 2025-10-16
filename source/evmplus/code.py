@@ -645,8 +645,8 @@ class ConfigFileHandler:
 
             elif macro_parts[0] == 'EncStep':
                 step = int(macro_parts[1])
-                if step == 1:
-                    self.config.encoder_step = 1
+                if step == 2:
+                    self.config.encoder_step = 2
                 elif step == 4:
                     self.config.encoder_step = 4
                 else: 
