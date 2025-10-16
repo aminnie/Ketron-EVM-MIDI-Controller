@@ -128,7 +128,7 @@ Difference between the Adafruit MacroPad standard order and the custom ordered u
 
 #### Variations: 
 - A version of the EVM controller is available that supports four additional quad encoders used to manage style and voice volumes.
-![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
+![image](/resources/hs13plus.jpg)
  
 - A version of the controller code is also available that emits only MIDI CC messages for instruments that can be coded via MIDI CC messages.
 
