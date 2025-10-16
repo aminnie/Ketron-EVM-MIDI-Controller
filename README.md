@@ -126,8 +126,10 @@ Original Adafruit Macropad RP2040:
 
 Difference between the Adafruit MacroPad standard order and the custom ordered unit: Low profile key switches and custom key caps. A custom 3D printed case enclosure that hides the electronics components. And of course a MIDI controller solution customized for the Ketron Event series.
 
-#### Variations: 
+#### More versions of this controller: 
 - A version of the EVM controller is available that supports four additional quad encoders used to manage style and voice volumes.
+![image](/resources/hs13plus.jpg)
+ 
 - A version of the controller code is also available that emits only MIDI CC messages for instruments that can be coded via MIDI CC messages.
 
 For more information, support, or a completed unit please contact: a_minnie@hotmail.com
