@@ -86,16 +86,16 @@ Notes:
 
 - The Ketron EVM expects all attached MIDI devices to be powered up before you start it up. It will not detect devices on the USB or MIDI ports that is not switched on or added after EVM power up.
 - The Macropad has a single USB port that is used to connect to the EVM, and as a result of the EVM  power up connect requirement, we have to power it via a USB hub or a USB Y Datat and Power Splitter cable that provides external power. 
-This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM. Some Y-splitter USB cables may also work if you prefer to connect a cell phone charger battery for instance to power the unit. See https://www.amazon.com/Sihyqiuling-Splitter-Charging-Headphone-Adapter/dp/B0FJ5DP9CB/ref=sr_1_17_sspa?crid=1H92XP4NOKO2O&dib=eyJ2IjoiMSJ9.Pc8ClB9aKcol7FXWyPR_7s1C62NT7X4j8KFaij6Y39A031Qs0WXnT23BlVC-EnyJnwJgrGCdYeDFOzEPTvFXvR2DVayXRVY9xw_k30NDO0C4sYFwaWLiGt3m3WLwD9HXvzDA6Rdamo2il-bmFUTxn6eiors_sZBEC9V31Eam0UMX64hlzb2mxPBNphEOn534uXCpNAWPSDxSs6IdAuV6kvI2u49zjQnfn6hmjUdbE-k.elSq3FMtOGotZ3MrtTY4zT3zlsATItBsDQLkFKwC2zs&dib_tag=se&keywords=usb%2Bc%2By%2Bsplitter%2Bcable&qid=1760664756&sprefix=usb%2Bc%2By%2Bsplitter%2Bcable%2Caps%2C119&sr=8-17-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9tdGY&th=1
+This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM. Some Y-splitter USB cables may also work if you prefer to connect a cell phone charger battery for instance to power the unit. See https://www.amazon.com/s?k=USBC+Splitter+1+in+2+Out+Charging&crid=3JMMTL2RNJAGS&sprefix=usbc+splitter+1+in+2+out+charging%2Caps%2C144&ref=nb_sb_noss_1
 
-### Loading customized code into the EVM Controller:
+### Loading customized code into a new Adafruit controller:
 
 See the Adafruit learning website for detailed instructors on how to
--  Prepare the board to load our custom solution in the code.py and keymap.cfg file into the controller board.
--  You have the following options:
+-  Prepare the board to load our custom solution in the boot.pym code.py and keymap.cfg files into the controller board.
+-  You have the following options after the firmware has been loaded onto the new board:
    - Simply copy the code files from a local disk to the MacroPad USB drive mounted as 'CIRCUITPY'.
-   - Use an text editor such as NotePad++ to open the extracted controller files from the download and do a SaveAs into the CIRCUITPY drive. This often is the easiest way to update the code.
-   - Download the Mu Editor to your PC. Mu will connect to the Macropad board and allow you up/download and edit the code.py file. It also has a REPL terminal that can be used to interact with the board during development and debugging. 
+   - Use an text editor such as NotePad++ to open the extracted controller files from the download and do a Save-As into the CIRCUITPY drive. This often is the easiest and most reliable way way to update the controller code.
+   - Download the Mu Editor to your PC. Mu will connect to the Macropad board and allow you up/download and edit the code.py file. It also has a REPL terminal that can be used to interact with the board during development and debugging and useful if you decide to modify the EVM controller code. 
 
 ### Testing the EVM Controller:
 
