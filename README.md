@@ -76,6 +76,7 @@ The Encoder switch is coded to cycle through the following functions when presse
 - Rotor Fast/Slow (blue) - fast or slow, default
 - Tempo Up/Down (yellow) - up or down from current Tempo value
 - Master Volume Up/Down (purple)
+
 Notes:
 - The colors mentioned for the encoder show on the Variation key. When you press Start/Stop, the EVM will start playing and the Variation button turns yellow to indicate that it is in Tempo adjustment mode. The Tempo and Volume modes once activated or pressed are timed to return to the default Rotor Fast/Slow after 60 seconds of no adjustments.
 - For Master Volume to work, you must change the EVM configuration to listen on MIDI channel 16. You can do so by navigating to the EVM MIDI configuration screen, select the receive (RX) option, and then set Global to channel 16. The Controller encoder in Volume mode sends MIDI CC Expression to EVM RX Global channel 16 adjusting the volume of all channels in the EVM - acting similar to the EVM Master Volume knob. Also note that an attached MIDI keyboard/organ can be configured to send expression pedal messages to the EVM synchronizing volume between the devices in the same manner.
@@ -85,7 +86,7 @@ Notes:
 
 - The Ketron EVM expects all attached MIDI devices to be powered up before you start it up. It will not detect devices on the USB or MIDI ports that is not switched on or added after EVM power up.
 - The Macropad has a single USB port that is used to connect to the EVM, and as a result of the EVM  power up connect requirement, we have to power it via a USB hub or a USB Y Datat and Power Splitter cable that provides external power. 
-This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM. Some Y-splitter USB cables may also work if you prefer to connect a cell phone charger battery for instance to power the unit.
+This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM. Some Y-splitter USB cables may also work if you prefer to connect a cell phone charger battery for instance to power the unit. See https://www.amazon.com/Sihyqiuling-Splitter-Charging-Headphone-Adapter/dp/B0FJ5DP9CB/ref=sr_1_17_sspa?crid=1H92XP4NOKO2O&dib=eyJ2IjoiMSJ9.Pc8ClB9aKcol7FXWyPR_7s1C62NT7X4j8KFaij6Y39A031Qs0WXnT23BlVC-EnyJnwJgrGCdYeDFOzEPTvFXvR2DVayXRVY9xw_k30NDO0C4sYFwaWLiGt3m3WLwD9HXvzDA6Rdamo2il-bmFUTxn6eiors_sZBEC9V31Eam0UMX64hlzb2mxPBNphEOn534uXCpNAWPSDxSs6IdAuV6kvI2u49zjQnfn6hmjUdbE-k.elSq3FMtOGotZ3MrtTY4zT3zlsATItBsDQLkFKwC2zs&dib_tag=se&keywords=usb%2Bc%2By%2Bsplitter%2Bcable&qid=1760664756&sprefix=usb%2Bc%2By%2Bsplitter%2Bcable%2Caps%2C119&sr=8-17-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9tdGY&th=1
 
 ### Loading customized code into the EVM Controller:
 
