@@ -104,7 +104,7 @@ Before connecting to the EVM moodule, you may want to download and install MidiV
 ### Customizing the EVM Cntroller SysEx messages:
 
 Keys are configured by updating the keymap.cfg file on the controller USB drive. Modifying the mappings requires you to lookup the exact text for the required SysEWx MIDI message from either the Tabs (pedal_midis) or Pedal (tab_midis) lookup tables in the Ketron MIDI documentation, and copy it onto one of the keys of the keys. See the config file for the current configuration. Please be careful with the configuration. It is validating and if an error is enountered during startup, all keys will turn red. The unit continues to function though based on the coded defaults. It is preferred that you keep with the Pedal messages. There are many more Tab messages, and for instance Value Up/Down is very useful, but without context it results in unexpected behaviors in the EVM. Carefully test if you pick a value from Tabs other than VARATION. 
-Note: The rotary encoder SysEx output is currently hardcoded to tempo up/down,  rotary fast/slow or volume up/down on successive encoder button presses. It is note configurable, but could be done in future if requested.
+Note: The rotary encoder SysEx output is currently hardcoded to tempo up/down,  rotary fast/slow or volume up/down on successive encoder button presses. It is not configurable, but could be done in future if requested.
 
 #### Extra:
 
@@ -112,7 +112,7 @@ Note: The rotary encoder SysEx output is currently hardcoded to tempo up/down,  
   - The 3D case .scad and .stl files are available in the case directory if you would like to print it yourself. Please note that it consists of three files: The main case, the top cover, and loose fitting filler that goes in between the PCB and the top cover to keep thetop cover flush with the case top.
   - I switched to using low profile key switches and caps you see in the picture. It feels and looks much better. Contact me if I can help.
   - If you are going to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only, not the full kit
-  - If you have a need to tinker with the code, and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
+  - If you have a need to tinker with the code and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
 
 Setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the out of the box Macropad RP2040:
 
