@@ -70,7 +70,7 @@ The shift layer operates in two modes - similar to a typical PC keyboard:
 - When you press and hold Variation/Shift for 200ms or longer, the keypad behavior starts activating in a way similar to caps lock on a PC keyboard. The shift layer is activated and keys such as Value Up/Down can be pressed until the Variation/Shift key is pressed again.
 - Note: The Variation key continues to support the EVM Arranger Variation function on a quick press (<200ms) and if the above shift conditions are not met.
 
-### Controller Primary Encoder Configration:
+### Controller Primary Encoder Configuration:
 
 The Encoder switch is coded to cycle through the following functions when pressed. The rotary encode is used to change the values for the selected function.
 - Rotor Fast/Slow (blue) - default
