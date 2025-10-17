@@ -64,7 +64,7 @@ Row 3:
 - Value Up (violet)
 - Start/End (red)
 
-#### Activating the Shift Layaer
+#### Activating the Shift Layer
 
 The shift layer operates in two modes - not unlike a typical PC keyboard: 
 - When you press Variation/Shift and while holding it follow with a second key press, the key mapping from the shift layer is sent. 
