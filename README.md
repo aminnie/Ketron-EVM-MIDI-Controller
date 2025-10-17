@@ -18,7 +18,7 @@ Why use the Macropad RP2040 to control the Ketron? The Macropad has USB HID keyb
 
 ### Controller Button Configuration
 
-The USB based MIDI Controller supports the most often used Arranger functions via MIDI SysEx and CC messages. Button assignmeents can be changed by modifying the values in a config file saved on the controller's USB drive. The controller supports a base and shift layer, enabling up to 24 functions to be coded on the keys. 
+The USB based MIDI Controller supports the most often used Arranger functions via MIDI SysEx and CC messages. Button assignments can be changed by modifying the values in a config file saved on the controller's USB drive. The controller supports a base and shift layer, enabling up to 24 functions to be coded on the keys. 
 
 #### Base layer key assignments
 
