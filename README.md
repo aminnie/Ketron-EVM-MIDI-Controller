@@ -65,14 +65,10 @@ Row 3:
 - Start/End (red)
 
 #### Activating the Shift Layer
-
-The shift layer operates in two modes - not unlike a typical PC keyboard: 
-- When you press Variation/Shift and while holding it follow with a second key press, the key mapping from the shift layer is sent. 
-This allows for quick activations for e.g. 1/2 Bar with a familiar keyboard shift action. 
-- When you press and hold Variation/Shift for 200ms or longer, the keypad behavior is similar to caps lock 
-on a PC keyboard. The shift layer is activated and keys such as Value Up/Down can be pressed until the
-Variation/Shift key is pressed again.
-- The Varation key continues to support the EVM Variation function if pressed and the above shift conditions are not met.
+The shift layer operates in two modes - similar to a typical PC keyboard:
+- Press the Variation/Shift key, and while holding it in follow up with a second key press for the desired layered function. This combination of keys will transmit the layered MIDI message. This allows for quick activations of e.g. the 1/2 Bar message using the familiar keyboard shift action. More than one layered massage can be sent while the original shift key is held down.
+- When you press and hold Variation/Shift for 200ms or longer, the keypad behavior starts activating in a way similar to caps lock on a PC keyboard. The shift layer is activated and keys such as Value Up/Down can be pressed until the Variation/Shift key is pressed again.
+- Note: The Variation key continues to support the EVM Arranger Variation function on a quick press (<200ms) and if the above shift conditions are not met.
 
 ### Controller Primary Encoder Configration:
 
