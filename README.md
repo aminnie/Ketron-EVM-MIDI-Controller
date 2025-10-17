@@ -124,10 +124,45 @@ Original Adafruit Macropad RP2040:
 
 Difference between the Adafruit MacroPad standard order and the custom ordered unit: Low profile key switches and custom key caps. A custom 3D printed case enclosure that hides the electronics components. And of course a MIDI controller solution customized for the Ketron Event series.
 
-#### More versions of this controller: 
-- A version of the EVM controller is available that supports four additional quad encoders used to manage style and voice volumes.
+#### HS13+ (Plus):
+
+This version of the EVM controller supports four additional quad encoders used to manage style and voice volumes. The additional four encoders and their built-in switches follow the shift state enabled through the Variation key as explained above. 
+
 ![image](/resources/hs13plus.jpg)
- 
+
+### Base layer encoder assignments
+
+Rotary Encoders (left to right):
+- Lowers Volume
+- Upper/Voice 1 Volume
+- Upper/Voice 2 Volume
+- Drawbar Volume
+
+Rotary Switches (on each encoder):
+- Lowers Volume to 0
+- Upper Volumes to 0 
+- All Volumes to 0
+- Manual Volumes to 96
+
+### Shift layer encoder assignments
+
+Rotary Encoders (left to right):
+- Style Volume
+- Drum Volume
+- Bass Volumes
+- RealChord Volumes
+
+Rotary Switches (on each encoder):
+- Bass Volume to 0
+- Bass Volumes to 96 
+- All Style Volumes to 0
+- All Style Volumes to 96
+
+Notes: 
+- ‘All Style’ volumes include: Style, Drums, RealChord and Chord
+- Volume settings are adjusted relative to the switches options pressed.
+
+#### More versions of this controller:  
 - A version of the controller code is also available that emits only MIDI CC messages for instruments that can be coded via MIDI CC messages.
 
 For more information, support, or a completed unit please contact: a_minnie@hotmail.com
