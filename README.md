@@ -151,10 +151,10 @@ Notes:
 #### Extra:
 
 - Please let me know you need a 3D case for your solution
-  - The 3D case .scad and .stl files are available in the case directory if you would like to print it yourself. Please note that it consists of three files: The main case, the top cover, and loose fitting filler that goes in between the PCB and the top cover to keep thetop cover flush with the case top.
-  - I switched to using low profile key switches and caps you see in the picture. It feels and looks much better. Contact me if I can help.
-  - If you are going to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only, not the full kit
-  - If you have a need to tinker with the code and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
+  - The 3D case .scad and .stl files are available in the case directory if you would like to print it yourself. There are multiple versions of the files for each of the HS13 and HS13+. Each case consists of 3 or more components to be printed.
+  - We switched to using low profile key switches and caps you see in the picture. It feels and looks much better. Contact me if I can help.
+  - If you plan to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only, not the full kit
+  - If you have a need to tinker with code.py and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
 
 Setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the out of the box Macropad RP2040:
 
