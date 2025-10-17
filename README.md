@@ -16,6 +16,8 @@ The EVM Pad controller is embedded in a custom 3d printed case with low profile 
 
 Why use the Macropad RP2040 to control the Ketron? The Macropad has USB HID keyboard drivers - just like the countless keypads you fill find on Amazon. However, these devices and many dedicated MIDI controllers do not support sending MIDI SysEx messages. Ketron exposes a hardware MIDI pedal interface on the EVM, but also has generously provided a MIDI over USB implmenetation. This controller is coded to send MIDI CC and SysEX messages over USB using the Adafruit Circuit Python library.
 
+## EVM Controller HS13+ (Plus):
+
 ### Controller Button Configuration
 
 The USB based MIDI Controller supports the most often used Arranger functions via MIDI SysEx and CC messages. Button assignments can be changed by modifying the values in a config file saved on the controller's USB drive. The controller supports a base and shift layer, enabling up to 24 functions to be coded on the keys. 
@@ -81,7 +83,6 @@ Notes:
 - The colors mentioned for the encoder show on the Variation key. When you press Start/Stop, the EVM will start playing and the Variation button turns yellow to indicate that it is in Tempo adjustment mode. The Tempo and Volume modes once activated or pressed are timed to return to the default Rotor Fast/Slow after 60 seconds of no adjustments.
 - For Master Volume to work, you must change the EVM configuration to listen on MIDI channel 16. You can do so by navigating to the EVM MIDI configuration screen, select the receive (RX) option, and then set Global to channel 16. The Controller encoder in Volume mode sends MIDI CC Expression to EVM RX Global channel 16 adjusting the volume of all channels in the EVM - acting similar to the EVM Master Volume knob. Also note that an attached MIDI keyboard/organ can be configured to send expression pedal messages to the EVM synchronizing volume between the devices in the same manner.
 
-
 ### Connecting the EVM Controller to your EVM Module:
 
 - The Ketron EVM expects all attached MIDI devices to be powered up before you start it up. It will not detect devices on the USB or MIDI ports that is not switched on or added after EVM power up.
@@ -106,25 +107,7 @@ Before connecting to the EVM moodule, you may want to download and install MidiV
 Keys are configured by updating the keymap.cfg file on the controller USB drive. Modifying the mappings requires you to lookup the exact text for the required SysEWx MIDI message from either the Tabs (pedal_midis) or Pedal (tab_midis) lookup tables in the Ketron MIDI documentation, and copy it onto one of the keys of the keys. See the config file for the current configuration. Please be careful with the configuration. It is validating and if an error is enountered during startup, all keys will turn red. The unit continues to function though based on the coded defaults. It is preferred that you keep with the Pedal messages. There are many more Tab messages, and for instance Value Up/Down is very useful, but without context it results in unexpected behaviors in the EVM. Carefully test if you pick a value from Tabs other than VARATION. 
 Note: The rotary encoder SysEx output is currently hardcoded to tempo up/down,  rotary fast/slow or volume up/down on successive encoder button presses. It is not configurable, but could be done in future if requested.
 
-#### Extra:
-
-- Please let me know you need a 3D case for your solution
-  - The 3D case .scad and .stl files are available in the case directory if you would like to print it yourself. Please note that it consists of three files: The main case, the top cover, and loose fitting filler that goes in between the PCB and the top cover to keep thetop cover flush with the case top.
-  - I switched to using low profile key switches and caps you see in the picture. It feels and looks much better. Contact me if I can help.
-  - If you are going to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only, not the full kit
-  - If you have a need to tinker with the code and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
-
-Setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the out of the box Macropad RP2040:
-
-![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
-
-Original Adafruit Macropad RP2040:
-
-![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
-
-Difference between the Adafruit MacroPad standard order and the custom ordered unit: Low profile key switches and custom key caps. A custom 3D printed case enclosure that hides the electronics components. And of course a MIDI controller solution customized for the Ketron Event series.
-
-#### HS13+ (Plus):
+## EVM Controller HS13+ (Plus):
 
 This version of the EVM controller supports four additional quad encoders used to manage style and voice volumes. The additional four encoders and their built-in switches follow the shift state enabled through the Variation key as explained above. 
 
@@ -164,6 +147,24 @@ Notes:
 
 #### More versions of this controller:  
 - A version of the controller code is also available that emits only MIDI CC messages for instruments that can be coded via MIDI CC messages.
+
+#### Extra:
+
+- Please let me know you need a 3D case for your solution
+  - The 3D case .scad and .stl files are available in the case directory if you would like to print it yourself. Please note that it consists of three files: The main case, the top cover, and loose fitting filler that goes in between the PCB and the top cover to keep thetop cover flush with the case top.
+  - I switched to using low profile key switches and caps you see in the picture. It feels and looks much better. Contact me if I can help.
+  - If you are going to print a case and use low profile key switches, then I would recommend you buy the Adafruit Macropad bare bones board only, not the full kit
+  - If you have a need to tinker with the code and try qwiic add-ons, then print the dev 3D case which has a larger slot that accepts a qwiic connector.
+
+Setup with the Roland AT900C, Ketron EVM, iPad EVM Controller, and the out of the box Macropad RP2040:
+
+![image](https://github.com/user-attachments/assets/b157a384-70e0-4774-a011-49b8d7b529fb)
+
+Original Adafruit Macropad RP2040:
+
+![image](https://github.com/user-attachments/assets/6fd9b969-9b77-4c2a-81fc-0f7a34129f4d)
+
+Difference between the Adafruit MacroPad standard order and the custom ordered unit: Low profile key switches and custom key caps. A custom 3D printed case enclosure that hides the electronics components. And of course a MIDI controller solution customized for the Ketron Event series.
 
 For more information, support, or a completed unit please contact: a_minnie@hotmail.com
 
