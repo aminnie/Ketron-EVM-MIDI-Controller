@@ -73,18 +73,19 @@ The shift layer operates in two modes - similar to a typical PC keyboard:
 ### Controller Primary Encoder Configuration:
 
 The Encoder switch is coded to cycle through the following functions when pressed. The rotary encode is used to change the values for the selected function.
-- Rotor Fast/Slow (blue) - default
-- Tempo Up/Down (yellow)
-- Volume Up/Down (purple)
-
+- Rotor Fast/Slow (blue) - fast or slow, default
+- Tempo Up/Down (yellow) - up or down from current Tempo value
+- Master Volume Up/Down (purple)
 Notes:
-- The colors mentioned show on the Variation key. When you press Start/Stop, the EVM will start playing and the Variation button turns yellow to indicate that it is in Tempo adjustment mode. The Tempo and Volume modes once activated or pressed is timed to return to the default Rotor Fast/Slow after 60 seconds of no adjustments.
-- For Volume to work, you must change the EVM configuration to listen on MIDI channel 16. You can do so by navigating to the EVM MIDI configuration screen, select the receive (RX) option, and then set Global to channel 16. The Controller encoder in Volume mode sends MIDI CC Expression to EVM RX Global channel 16 adjusting the volume of all channels in the EVM - acting similar to the EVM Master Volume knob. Also note that an attached MIDI keyboard/organ can be configured to send expression pedal messages to the EVM synchronizing volume between the devices in the same manner. 
+- The colors mentioned for the encoder show on the Variation key. When you press Start/Stop, the EVM will start playing and the Variation button turns yellow to indicate that it is in Tempo adjustment mode. The Tempo and Volume modes once activated or pressed are timed to return to the default Rotor Fast/Slow after 60 seconds of no adjustments.
+- For Master Volume to work, you must change the EVM configuration to listen on MIDI channel 16. You can do so by navigating to the EVM MIDI configuration screen, select the receive (RX) option, and then set Global to channel 16. The Controller encoder in Volume mode sends MIDI CC Expression to EVM RX Global channel 16 adjusting the volume of all channels in the EVM - acting similar to the EVM Master Volume knob. Also note that an attached MIDI keyboard/organ can be configured to send expression pedal messages to the EVM synchronizing volume between the devices in the same manner.
+
 
 ### Connecting the EVM Controller to your EVM Module:
 
 - The Ketron EVM expects all attached MIDI devices to be powered up before you start it up. It will not detect devices on the USB or MIDI ports that is not switched on or added after EVM power up.
-- The Macropad has a single USB port that is used to connect to the EVM, and as a result of the EVM  power up connect requirement, we have to power it via a USB hub that provides external power. This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM. Some Y-splitter USB cables may also work if you prefer to connect a cell phone charger battery for instance to power the unit.
+- The Macropad has a single USB port that is used to connect to the EVM, and as a result of the EVM  power up connect requirement, we have to power it via a USB hub or a USB Y Datat and Power Splitter cable that provides external power. 
+This is an example USB Hub that works:  Wenter 5 Ports USB 3.0 Hub (https://www.amazon.com/gp/product/B0BMFDLRSQ/ref=ewc_pr_img_1?smid=ATSSJE5RHO7GG&psc=1). The powered USB hub can also be used to charge a tablet if you use that to wirelessly control the EVM. Some Y-splitter USB cables may also work if you prefer to connect a cell phone charger battery for instance to power the unit.
 
 ### Loading customized code into the EVM Controller:
 
