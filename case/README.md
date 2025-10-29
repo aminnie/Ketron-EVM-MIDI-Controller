@@ -2,13 +2,13 @@
 
 More details and refinement of the OpenSCAD 3D (https://openscad.org/) design and code to follow.
 
-The controller enclosure consists of three components:
+The EVM HS13 AND HS13+ MacroPad controller enclosure consists of three components:
 - Bottom case
   - The PCB and next two layers insert into the bottom case. 
   - The case has openings for the UCB connection as well as the Macropad reset.
 - Top cover
   - Keys are inserted into the PCB using the top cover as guide. 
-  - The top cover also hides the encoder main body.
+  - The top cover also hides the encoder main body with a seperately printed case (in a seperate file for the HS13)
 - Filler layer
   - This layer is inserted in between the top cover laaer and the MacroPad PCB. This closes the gap between the top cover and the PCB and ensures that the latter remains correctly positions.
 
