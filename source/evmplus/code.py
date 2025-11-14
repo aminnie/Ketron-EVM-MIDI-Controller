@@ -113,7 +113,7 @@ class EVMConfig:
         #self.version = "1.2"
         self.display_banner =     "   AJAMSONIC HS13+   "
         self.display_sub_banner = "Pad Controller   "
-        self.version = "1.1.0"
+        self.version = "1.2.0"
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
@@ -133,6 +133,7 @@ class EVMConfig:
         self.encoder_step = 8
         self.encoder_fwd = True
         self.encoder_grad = False
+        self.encoder_vol = 96
 
         self.quad_switch_timer = .5
         
@@ -601,10 +602,6 @@ class ConfigFileHandler:
                 str_part = str(part).replace("]","")                
                 macro_list.append(str_part)
 
-            #print(f"macro: {str(line_parts[0])}")
-            #print(f"macro_key: {str(macro_parts[0])}")
-            #print(f"macro_list: {macro_list}")
-            
             return {
                 'macro': str(line_parts[0]),
                 'macro_key': str(macro_parts[0]),
@@ -635,15 +632,13 @@ class ConfigFileHandler:
             if len(macro_parts) != 2:
                 raise ValueError("Invalid variable format")
                 
-            print(f"var line: {line_parts[1]}")
+            #print(f"var line: {line_parts[1]}")
 
             if macro_parts[0] == 'EncQuad':
                 if macro_parts[1].strip() == "True":
                     self.config.is_quadencoder = True
-                    print(f"config encoder quad: True")
                 else: 
                     self.config.is_quadencoder = False
-                    print(f"config encoder quad: False")
 
             elif macro_parts[0] == 'EncStep':
                 step = int(macro_parts[1])
@@ -653,23 +648,25 @@ class ConfigFileHandler:
                     self.config.encoder_step = 4
                 else: 
                     self.config.encoder_step = 8
-                print(f"config encoder step: {self.config.encoder_step}")
 
             elif macro_parts[0] == 'EncFwd':
                 if macro_parts[1].strip() == "True":
                     self.config.encoder_fwd = True
-                    print(f"config encoder fwd: True")
                 else: 
                     self.config.encoder_fwd = False
-                    print(f"config encoder fwd: False")
             
             elif macro_parts[0] == 'EncGrad':
                 if macro_parts[1].strip() == "True":
                     self.config.encoder_grad = True
-                    print(f"config encoder graduated: True")
                 else: 
                     self.config.encoder_grad = False
-                    print(f"config encoder graduated: False")
+            
+            elif macro_parts[0] == 'EncVol':
+                vol = int(macro_parts[1])
+                if vol > 0 and vol < 128:
+                    self.config.encoder_vol = vol
+                else:
+                    self.config.encoder_vol = 96
             
             return True
         except (ValueError, IndexError) as e:
@@ -762,23 +759,14 @@ class ConfigFileHandler:
                 elif "mac" in line:                    
                     parsed = self.parse_macro_config_line(line)
                     if parsed is None:
-                        # print(f"Skipping line: {line}")
                         continue
 
-                    # print(f"got macro all: {parsed}")
-                    # print(f"got macro key : {parsed['macro_key']}")
-                    # print(f"got macro value: {parsed['macro_list']}")
-                    
                     # Add a new macro entry in dictionary
                     self.key_cache.user_macro_midis[parsed['macro_key']] = parsed['macro_list']
-
-                    # print(f"macro is {self.key_cache.user_macro_midis[parsed['macro_key']]}")
-                    # print(self.key_cache.user_macro_midis)
 
                 elif "var" in line:                    
                     parsed = self.parse_var_config_line(line)
                     if parsed is None:
-                        # print(f"Skipping line: {line}")
                         continue
 
             except Exception as e:
@@ -1043,13 +1031,7 @@ class EVMController:
             self.preset_quad_positions()
 
             # Default all encoder starting volumes to 96
-            self.preset_quad_volumes(96)
-
-            # To do: Light up the Encoder knobs initially
-            #self.quad_pixels[0] = 0xFFFFFF
-            #self.quad_pixels[1] = 0xFFFFFF
-            #self.quad_pixels[2] = 0xFFFFFF
-            #self.quad_pixels[3] = 0xFFFFFF
+            self.preset_quad_volumes(2, 96)
 
             print("Quad Encoders configured")
             return True
@@ -1206,16 +1188,16 @@ class EVMController:
                 self.display.update_text(9, f"KNB1: Lower Vol {volume}")
                 ccCode = SliderCC.LOWERS_CC
             else:
-                self.display.update_text(9, f"KNB1: Style Vol {volume}")
-                ccCode = SliderCC.STYLE_CC
+                self.display.update_text(9, f"KNB1: Drum Vol {volume}")
+                ccCode = SliderCC.DRUM_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 1:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"KNB2: Voice1 Vol {volume}")
                 ccCode = SliderCC.VOICE1_CC
             else:
-                self.display.update_text(9, f"KNB2: Drum Vol {volume}")
-                ccCode = SliderCC.DRUM_CC
+                self.display.update_text(9, f"KNB2: Bass Vol {volume}")
+                ccCode = SliderCC.BASS_CC
             self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
         elif encoder_number == 2:
             if self.state.shift_mode == ShiftKeyMode.OFF:
@@ -1241,106 +1223,116 @@ class EVMController:
         list_all_voices = [SliderCC.BASS_CC, SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
         list_manual_voices = [SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
         list_upper_voices = [SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
-        list_lower_voices = [SliderCC.LOWERS_CC]
-        list_bass_voices = [SliderCC.BASS_CC]
-        list_drums = [SliderCC.DRUM_CC]
-        list_chords = [SliderCC.CHORD_CC]
-        list_realchords = [SliderCC.REALCHORD_CC]
+
+        list_bass = [SliderCC.BASS_CC]
+        list_drum = [SliderCC.DRUM_CC]
+        list_chord = [SliderCC.CHORD_CC]
+        list_realchord = [SliderCC.REALCHORD_CC]
+        
+        list_lower = [SliderCC.LOWERS_CC]
+        list_voice1 = [SliderCC.VOICE1_CC]
+        list_voice2 = [SliderCC.VOICE2_CC]
+        list_drawbar = [SliderCC.DRAWBARS_CC]
 
         if self.state.shift_mode == ShiftKeyMode.OFF:
             # Process volumes in base layer
             if encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle[0] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle[0] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle[0] = False
-                for index, ccCode in enumerate(list_all_voices):
+                for index, ccCode in enumerate(list_drawbar):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-                self.preset_quad_volumes(volume)
-                self.display.update_text(9, f"KNB4: Manuals Vol {volume}")
+                self.preset_a_quad_volume(False, 3, volume)
+                self.display.update_text(9, f"KNB4: Drawbar Vol {volume}")
 
             elif encoder_number == 1 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle[1] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle[1] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle[1] = False
-                for index, ccCode in enumerate(list_upper_voices):
+                for index, ccCode in enumerate(list_voice2):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-                self.display.update_text(9, f"KNB3: Uppers Vol {volume}")
+                self.preset_a_quad_volume(False, 2, volume)
+                self.display.update_text(9, f"KNB3: Voice2 Vol {volume}")
 
             elif encoder_number == 2 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle[2] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle[2] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle[2] = False
-                for index, ccCode in enumerate(list_lower_voices):
+                for index, ccCode in enumerate(list_voice1):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
-                self.display.update_text(9, f"KNB2: Lowers Vol {volume}")
+                self.preset_a_quad_volume(False, 1, volume)
+                self.display.update_text(9, f"KNB2: Voice1 Vol {volume}")
 
             elif encoder_number == 3 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle[3] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle[3] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle[3] = False
-                for index, ccCode in enumerate(list_bass_voices):
+                for index, ccCode in enumerate(list_lower):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
-                self.display.update_text(9, f"KNB1: Bass Vol {volume}")
+                self.preset_a_quad_volume(False, 0, volume)
+                self.display.update_text(9, f"KNB1: Lowers Vol {volume}")
         
         else:
             # Process volumes in shift layer
             if encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle_shift[0] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle_shift[0] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle_shift[0] = False
-                for index, ccCode in enumerate(list_style_voices):
+                for index, ccCode in enumerate(list_realchord):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-                self.display.update_text(9, f"KNB4: Style Vol {volume}")
-                self.preset_quad_volumes(volume)
+                self.preset_a_quad_volume(True, 3, volume)
+                self.display.update_text(9, f"KNB4: R/Chord Vol {volume}")
 
             elif encoder_number == 1 and (self.state.last_quad_switch != 1 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle_shift[1] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle_shift[1] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle_shift[1] = False
-                for index, ccCode in enumerate(list_drums):
+                for index, ccCode in enumerate(list_chord):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-                self.display.update_text(9, f"KNB3: Drum Vol {volume}")
-                self.preset_quad_volumes(volume)
+                self.preset_a_quad_volume(True, 2, volume)
+                self.display.update_text(9, f"KNB3: Chord Vol {volume}")
 
             elif encoder_number == 2 and (self.state.last_quad_switch != 2 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle_shift[2] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle_shift[2] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle_shift[2] = False
-                for index, ccCode in enumerate(list_chords):
+                for index, ccCode in enumerate(list_bass):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
-                self.display.update_text(9, f"KNB2: Chord Vol {volume}")
+                self.preset_a_quad_volume(True, 1, volume)
+                self.display.update_text(9, f"KNB2: Bass Vol {volume}")
 
             elif encoder_number == 3 and (self.state.last_quad_switch != 3 or self.state.last_quad_switch == 10):
                 if self.quad_encoders_toggle_shift[3] == False: 
-                    volume = 0x60
+                    volume = self.config.encoder_vol
                     self.quad_encoders_toggle_shift[3] = True
                 else: 
                     volume = 0x00
                     self.quad_encoders_toggle_shift[3] = False
-                for index, ccCode in enumerate(list_realchords):
+                for index, ccCode in enumerate(list_drum):
                     self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
-                self.display.update_text(9, f"KNB1: R/Chord Vol {volume}")
+                self.preset_a_quad_volume(True, 0, volume)
+                self.display.update_text(9, f"KNB1: Drums Vol {volume}")
 
         # Remember the last encoder switch pressed to avoid duplicate triggers, but re-enable via timer
         self.state.last_quad_switch = encoder_number
@@ -1380,12 +1372,22 @@ class EVMController:
             self.quad_last_positions[n] = rotary_pos
             self.quad_last_positions_shift[n] = rotary_pos
                         
-    def preset_quad_volumes(self, volume):
-        """Preset all quad volumes on each shift layer state to volume value - mostly all 0 or all 96"""
+    def preset_quad_volumes(self, shift_layer, volume):
+        """Preset all quad volumes on both layers to volume value - mostly all 0 or all 96"""
 
         for n in range(4):
-            self.state.quad_volumes[n] = volume
-            self.state.quad_volumes_shift[n] = volume
+            if shift_layer == 0 or shift_layer == 2:
+                self.state.quad_volumes[n] = volume
+            if shift_layer == 1 or shift_layer == 2:
+                self.state.quad_volumes_shift[n] = volume
+
+    def preset_a_quad_volume(self, shift_layer, encoder_number, volume):
+        """Preset a single quad volume to volume value - 0 or all 96"""
+
+        if shift_layer == False:
+            self.state.quad_volumes[encoder_number] = volume
+        else:
+            self.state.quad_volumes_shift[encoder_number] = volume
 
     def adjust_quadencoder_step(self, current_volume, time_delta, step) -> int:
         """Level adjust the volume steps to avoid to many clicks at lower volumes"""
@@ -1397,10 +1399,7 @@ class EVMController:
         if time_delta < 100/1000 or current_volume < 32:
             adjusted_step = step * 4 
         elif time_delta < 250/1000:
-            adjusted_step = step * 2 
-
-        #print(f"Time delta {time_delta}")
-        #print(f"Step {adjusted_step}")
+            adjusted_step = step * 2
 
         return adjusted_step
 
