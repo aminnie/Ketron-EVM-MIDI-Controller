@@ -122,10 +122,10 @@ Rotary Encoders (left to right):
 - Drawbar Volume
 
 Rotary Switches (on each encoder):
-- Lowers Volume to 0
-- Upper Volumes to 0 
-- All Volumes to 0
-- Manual Volumes to 96
+- Lowers Volume toggle 0 or 96
+- Upper1 Volume toggle 0 or 96
+- Upper2 Volume toggle 0 or 96
+- Drawbar Volume toggle 0 or 96
 
 ### Shift layer encoder assignments
 
@@ -136,10 +136,10 @@ Rotary Encoders (left to right):
 - RealChord Volumes
 
 Rotary Switches (on each encoder):
-- Bass Volume to 0
-- Bass Volumes to 96 
-- All Style Volumes to 0
-- All Style Volumes to 96
+- Drum Volume toggle 0 or 96
+- Bass Volumes toggle 0 or 96
+- Chord Volumes toggle 0 or 96
+- RealChord Volume toggle 0 or 96
 
 Notes: 
 - ‘All Style’ volumes include: Style, Drums, RealChord and Chord
