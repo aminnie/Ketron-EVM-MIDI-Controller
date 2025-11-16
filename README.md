@@ -130,9 +130,9 @@ Rotary Switches (on each encoder):
 ### Shift layer encoder assignments
 
 Rotary Encoders (left to right):
-- Style Volume
 - Drum Volume
-- Bass Volumes
+- Bass Volume
+- Chord Volumes
 - RealChord Volumes
 
 Rotary Switches (on each encoder):
