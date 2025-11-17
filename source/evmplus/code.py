@@ -99,9 +99,6 @@ COLOR_MAP = {
     'teal': Colors.TEAL
 }
 
-# Key used to reflect timed Eccoder mode changes on LED
-VARIATION_KEY = 0
-
 # Key used to trigger test tune
 TUNE_KEY = 11
 
@@ -118,6 +115,11 @@ class EVMConfig:
         # USB port on the left side of the MacroPad
         self.usb_left = True
 
+        # Key used to reflect timed Eccoder mode changes on LED
+        # Enable or disable Layer Shift Mode for users who prefer single layer only 
+        self.key_variation = 0
+        self.shift_enable = True
+
         # Timers for tempo, volume, key brightness, etc
         self.key_bright_timer = 0.20
         self.shift_hold_timer = 0.25
@@ -127,7 +129,7 @@ class EVMConfig:
         self.value_timer = 60
         self.version_timer = 15
         self.tune_hold_timer = 2
-
+        
         # Quad Encoder configs loaded from keymap.cfg
         self.is_quadencoder = True
         self.encoder_step = 8
@@ -639,6 +641,7 @@ class ConfigFileHandler:
                     self.config.is_quadencoder = True
                 else: 
                     self.config.is_quadencoder = False
+                print(f"Var Quad Encoder Enable: {self.config.is_quadencoder}")
 
             elif macro_parts[0] == 'EncStep':
                 step = int(macro_parts[1])
@@ -648,18 +651,21 @@ class ConfigFileHandler:
                     self.config.encoder_step = 4
                 else: 
                     self.config.encoder_step = 8
+                print(f"Var Encoder Step: {self.config.encoder_step}")
 
             elif macro_parts[0] == 'EncFwd':
                 if macro_parts[1].strip() == "True":
                     self.config.encoder_fwd = True
                 else: 
                     self.config.encoder_fwd = False
+                print(f"Var Encoder FWD/BKWD: {self.config.encoder_fwd}")
             
             elif macro_parts[0] == 'EncGrad':
                 if macro_parts[1].strip() == "True":
                     self.config.encoder_grad = True
                 else: 
                     self.config.encoder_grad = False
+                print(f"Var Encoder Graduation: {self.config.encoder_grad}")
             
             elif macro_parts[0] == 'EncVol':
                 vol = int(macro_parts[1])
@@ -667,6 +673,36 @@ class ConfigFileHandler:
                     self.config.encoder_vol = vol
                 else:
                     self.config.encoder_vol = 96
+                print(f"Var Encoder Volume: {self.config.encoder_vol}")
+
+            elif macro_parts[0] == 'KeyVar':
+                varkey = int(macro_parts[1])
+                if varkey >= 0 and varkey < 12:
+                    self.config.key_variation = varkey
+                print(f"Var Key Variation: {self.config.key_variation}")
+
+            elif macro_parts[0] == 'ModShift':
+                if macro_parts[1].strip() == "True":
+                    self.config.shift_enable = True
+                else: 
+                    self.config.shift_enable = False
+                print(f"Var Shift Enable: {self.config.shift_enable}")
+
+            elif macro_parts[0] == 'TimVar':
+                timvar = int(macro_parts[1])
+                if timvar >= 250 and timvar < 10000:
+                    self.config.shift_hold_timer = timvar/1000
+                else:
+                    self.config.shift_hold_timer = 0.25
+                print(f"Var Variation Timer: {self.config.shift_hold_timer}")
+            
+            elif macro_parts[0] == 'TimTempo':
+                timtempo = int(macro_parts[1])
+                if timtempo >= 10000 and timtempo < 60000:
+                    self.config.tempo_timer = timtempo/1000
+                else:
+                    self.config.tempo_timer = 6
+                print(f"Var Tempo Timer: {self.config.tempo_timer}")
             
             return True
         except (ValueError, IndexError) as e:
@@ -1046,7 +1082,7 @@ class EVMController:
         for pixel in range(12):
             if self.config_handler.config_error:
                 self.macropad.pixels[pixel] = Colors.RED
-            elif pixel == self.config.get_key(VARIATION_KEY):  # Variation key
+            elif pixel == self.config.get_key(self.config.key_variation):  # Variation key
                 if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
                     self.macropad.pixels[pixel] = Colors.OFFWHITE                    
                 elif self.state.encoder_mode == EncoderMode.TEMPO:
@@ -1536,7 +1572,7 @@ class EVMController:
         
         self.key_start_time = 0
         self.shift_start_time  = 0
-        self.last_key_pressed = VARIATION_KEY        
+        self.last_key_pressed = self.config.key_variation        
         
         while True:
             try:
@@ -1548,7 +1584,7 @@ class EVMController:
                 if key_event and key_event.pressed:
                     self.last_key_pressed = key_event.key_number
                     
-                    if key_event.key_number == VARIATION_KEY:
+                    if key_event.key_number == self.config.key_variation and self.config.shift_enable == True:
                         if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
                             # print("Shift mode: Off")
                             self.state.shift_mode = ShiftKeyMode.OFF                        
@@ -1574,7 +1610,7 @@ class EVMController:
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
-                    if key_event.key_number == VARIATION_KEY:
+                    if key_event.key_number == self.config.key_variation:
                         if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - self.shift_start_time) > self.config.shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
                             self.display.update_text(9, "Layer: Shift Lock")
@@ -1583,7 +1619,7 @@ class EVMController:
                             # print("Shift mode: Active Lock")
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
                             # Send VAR MIDI message, but only if no other key pressed during shift mode
-                            if self.last_key_pressed == VARIATION_KEY:
+                            if self.last_key_pressed == self.config.key_variation:
                                 self._handle_key_press(key_event.key_number)                                    
                             self.state.shift_mode = ShiftKeyMode.OFF                        
                             self.display.update_text(9, "")
