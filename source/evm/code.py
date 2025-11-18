@@ -61,7 +61,7 @@ class Colors:
     PURPLE = 0x800080
     YELLOW = 0x808000
     TEAL = 0x004040
-    OFFWHITE = 0xA47474
+    OFFWHITE = 0x22202F
     
 # Color mapping dictionary
 COLOR_MAP = {
@@ -72,11 +72,9 @@ COLOR_MAP = {
     'yellow': Colors.YELLOW,
     'orange': Colors.ORANGE,
     'white': Colors.WHITE,
-    'teal': Colors.TEAL
+    'teal': Colors.TEAL,
+    'offwhite': Colors.OFFWHITE
 }
-
-# Key used to reflect timed Eccoder mode changes on LED
-VARIATION_KEY = 0
 
 # Key used to trigger test tune
 TUNE_KEY = 11
@@ -93,6 +91,14 @@ class EVMConfig:
 
         # USB port on the left side of the MacroPad
         self.usb_left = True
+
+        # MIDI Output Channel
+        self.midi_out_channel = 15
+                
+        # Key used to reflect timed Eccoder mode changes on LED
+        # Enable or disable Layer Shift Mode for users who prefer single layer only 
+        self.key_variation = 0
+        self.shift_enable = True
 
         # Timers for tempo, volume, and key brightness
         self.key_bright_timer = 0.20
@@ -119,8 +125,9 @@ class EVMConfig:
 
 # --- MIDI Handler Class ---
 class MIDIHandler:
-    def __init__(self, midi_instance, key_cache):
+    def __init__(self, midi_instance, config, key_cache):
         self.midi = midi_instance
+        self.config = config
         self.key_cache = key_cache
         
         self.manufacturer_id_pedal = bytearray([0x26, 0x79])
@@ -213,8 +220,9 @@ class MIDIHandler:
             print("Error sending macros SysEx: {}".format(e))
             return False
 
-    def send_master_volume(self, updown):
+    def send_master_volume(self, config, updown):
         """Send volume control via CC11"""
+        self.config = config
         
         try:
             # Change volume in 8-unit increments
@@ -223,7 +231,7 @@ class MIDIHandler:
             else:
                 self.cur_volume = min(127, self.cur_volume + 8)
 
-            self.midi.send(ControlChange(11, self.cur_volume), channel=15)
+            self.midi.send(ControlChange(11, self.cur_volume), channel=self.config.midi_out_channel)
             return True
         except Exception as e:
             print("Error sending volume: {}".format(e))
@@ -519,10 +527,6 @@ class ConfigFileHandler:
                 str_part = str(part).replace("]","")                
                 macro_list.append(str_part)
 
-            #print(f"macro: {str(line_parts[0])}")
-            #print(f"macro_key: {str(macro_parts[0])}")
-            #print(f"macro_list: {macro_list}")
-            
             return {
                 'macro': str(line_parts[0]),
                 'macro_key': str(macro_parts[0]),
@@ -530,6 +534,110 @@ class ConfigFileHandler:
             }
         except (ValueError, IndexError) as e:
             print("Error parsing macro line '{}': {}".format(line, e))
+            return None
+
+    def parse_var_config_line(self, line):
+        """Parse a single variable config line with validation"""
+        
+        #var00=EncQuad:True
+        try:
+            line = line.strip()
+            if line.startswith('#') or not line:
+                return None
+
+            if '=' not in line:
+                raise ValueError("Invalid format")
+
+            line_parts = line.split('=', 1)
+            if len(line_parts) != 2 or not line_parts[0].startswith('var'):
+                raise ValueError("Invalid variable format")
+
+            # Extract the variable key
+            macro_parts = line_parts[1].split(':')
+            if len(macro_parts) != 2:
+                raise ValueError("Invalid variable format")
+                
+            #print(f"var line: {line_parts[1]}")
+
+            if macro_parts[0] == 'EncQuad':
+                if macro_parts[1].strip() == "True":
+                    self.config.is_quadencoder = True
+                else: 
+                    self.config.is_quadencoder = False
+                print(f"Var Quad Encoder Enable: {self.config.is_quadencoder}")
+
+            elif macro_parts[0] == 'EncStep':
+                step = int(macro_parts[1])
+                if step == 2:
+                    self.config.encoder_step = 2
+                elif step == 4:
+                    self.config.encoder_step = 4
+                else: 
+                    self.config.encoder_step = 8
+                print(f"Var Encoder Step: {self.config.encoder_step}")
+
+            elif macro_parts[0] == 'EncFwd':
+                if macro_parts[1].strip() == "True":
+                    self.config.encoder_fwd = True
+                else: 
+                    self.config.encoder_fwd = False
+                print(f"Var Encoder FWD/BKWD: {self.config.encoder_fwd}")
+            
+            elif macro_parts[0] == 'EncGrad':
+                if macro_parts[1].strip() == "True":
+                    self.config.encoder_grad = True
+                else: 
+                    self.config.encoder_grad = False
+                print(f"Var Encoder Graduation: {self.config.encoder_grad}")
+            
+            elif macro_parts[0] == 'EncVol':
+                vol = int(macro_parts[1])
+                if vol > 0 and vol < 128:
+                    self.config.encoder_vol = vol
+                else:
+                    self.config.encoder_vol = 96
+                print(f"Var Encoder Volume: {self.config.encoder_vol}")
+
+            elif macro_parts[0] == 'KeyVar':
+                varkey = int(macro_parts[1])
+                if varkey >= 0 and varkey < 12:
+                    self.config.key_variation = varkey
+                print(f"Var Key Variation: {self.config.key_variation}")
+
+            elif macro_parts[0] == 'ModShift':
+                if macro_parts[1].strip() == "True":
+                    self.config.shift_enable = True
+                else: 
+                    self.config.shift_enable = False
+                print(f"Var Shift Enable: {self.config.shift_enable}")
+
+            elif macro_parts[0] == 'TimVar':
+                timvar = int(macro_parts[1])
+                if timvar >= 250 and timvar < 10000:
+                    self.config.shift_hold_timer = timvar/1000
+                else:
+                    self.config.shift_hold_timer = 0.25
+                print(f"Var Variation Timer: {self.config.shift_hold_timer}")
+            
+            elif macro_parts[0] == 'TimTempo':
+                timtempo = int(macro_parts[1])
+                if timtempo >= 10000 and timtempo < 60000:
+                    self.config.tempo_timer = timtempo/1000
+                else:
+                    self.config.tempo_timer = 6
+                print(f"Var Tempo Timer: {self.config.tempo_timer}")
+            
+            elif macro_parts[0] == 'MIDChan':
+                midchan = int(macro_parts[1])
+                if midchan >= 1 and midchan <= 16:
+                    self.config.midi_out_channel = midchan - 1
+                else:
+                    self.config.midi_out_channel = 15
+                print(f"Var MIDI Chan Out: {self.config.midi_out_channel}")
+            
+            return True
+        except (ValueError, IndexError) as e:
+            print("Error parsing variable line '{}': {}".format(line, e))
             return None
 
     def validate_midi_string(self, midi_type, command):
@@ -618,19 +726,16 @@ class ConfigFileHandler:
                 elif "mac" in line:                    
                     parsed = self.parse_macro_config_line(line)
                     if parsed is None:
-                        # print(f"Skipping line: {line}")
                         continue
 
-                    # print(f"got macro all: {parsed}")
-                    # print(f"got macro key : {parsed['macro_key']}")
-                    # print(f"got macro value: {parsed['macro_list']}")
-                    
                     # Add a new macro entry in dictionary
                     self.key_cache.user_macro_midis[parsed['macro_key']] = parsed['macro_list']
+                   
+                elif "var" in line:                    
+                    parsed = self.parse_var_config_line(line)
+                    if parsed is None:
+                        continue
 
-                    # print(f"macro is {self.key_cache.user_macro_midis[parsed['macro_key']]}")
-                    # print(self.key_cache.user_macro_midis)
-                    
             except Exception as e:
                 print(f"Exception in line {line_num}: {line}")
                 self.config_errors.append("Line {}: {}".format(line_num, e))
@@ -689,6 +794,7 @@ class DisplayManager:
 
     def show_startup_info(self):
         """Display startup information"""
+        
         self.labels[3].text = self.config.display_sub_banner
         self.labels[6].text = "KNOB MODE: Rotor"
         # self.labels[9].text = "Version: {}".format(self.config.version)
@@ -703,6 +809,7 @@ class DisplayManager:
 class StateManager:
     def __init__(self, config):
         self.config = config
+        
         self.encoder_mode = EncoderMode.ROTOR
         self.encoder_position = 0
         self.encoder_sign = False
@@ -711,7 +818,7 @@ class StateManager:
         # Controller Shift Mode based on Variation Key
         self.shift_mode = ShiftKeyMode.OFF
 
-        # Timing
+        # Timing trackers
         self.tempo_start_time = 0
         self.volume_start_time = 0
         self.value_start_time = 0
@@ -790,7 +897,7 @@ class EVMController:
         self.config_handler = ConfigFileHandler(self.key_cache, self.config)
 
         # Initialize MIDI
-        self._init_midi(self.key_cache)
+        self._init_midi(self.config, self.key_cache)
 
         # Initialize MacroPad
         self._init_macropad()
@@ -809,8 +916,10 @@ class EVMController:
 
         print("Pad Controller Ready")
 
-    def _init_midi(self, key_cache):
+    def _init_midi(self, config, key_cache):
         """Initialize MIDI connections"""
+
+        self.config = config
         
         print("Preparing Macropad Midi")
 
@@ -819,7 +928,7 @@ class EVMController:
             midi_out=usb_midi.ports[1], out_channel=4
         )
 
-        self.midi_handler = MIDIHandler(midi, key_cache)
+        self.midi_handler = MIDIHandler(midi, config, key_cache)
 
 
     def _init_macropad(self):
@@ -835,7 +944,7 @@ class EVMController:
         for pixel in range(12):
             if self.config_handler.config_error:
                 self.macropad.pixels[pixel] = Colors.RED
-            elif pixel == self.config.get_key(VARIATION_KEY):  # Variation key
+            elif pixel == self.config.get_key(self.config.key_variation):  # Variation key
                 if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
                     self.macropad.pixels[pixel] = Colors.OFFWHITE                    
                 elif self.state.encoder_mode == EncoderMode.TEMPO:
@@ -898,8 +1007,9 @@ class EVMController:
             print(f"Error: Sending key {key_number} ".format(e))
             return False
             
-    def _handle_encoder_change(self, direction):
+    def _handle_encoder_change(self, config, direction):
         """Handle encoder rotation"""
+        self.config = config
         
         self.state.encoder_sign = not self.state.encoder_sign
         current_time = time.time()
@@ -910,7 +1020,7 @@ class EVMController:
             self._process_tempo(direction)
             self.state.tempo_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VOLUME:
-            self._process_master_volume(direction)
+            self._process_master_volume(self.config, direction)
             self.state.volume_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VALUE:
             self._process_value(direction)
@@ -918,6 +1028,7 @@ class EVMController:
 
     def _process_rotor(self, direction):
         """Process rotor fast/slow commands"""
+        
         if direction == 1 and self.state.rotor_flag != 1:
             midi_value = self.key_cache.tab_midis["ROTOR_FAST"]
             self.display.update_text(3, "KNOB: Rotor Fast")
@@ -943,8 +1054,9 @@ class EVMController:
 
         self.midi_handler.send_pedal_sysex(midi_value)
 
-    def _process_master_volume(self, direction):
+    def _process_master_volume(self, config, direction):
         """Process volume up/down commands"""
+        self.config = config
         
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
@@ -952,7 +1064,7 @@ class EVMController:
         else:
             self.display.update_text(3, "KNOB: Volume Down{}".format(sign))
 
-        self.midi_handler.send_master_volume(direction)
+        self.midi_handler.send_master_volume(self.config, direction)
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
@@ -1019,7 +1131,7 @@ class EVMController:
         
         self.key_start_time = 0
         self.shift_start_time  = 0
-        self.last_key_pressed = VARIATION_KEY  
+        self.last_key_pressed =  self.config.key_variation 
         
         while True:
             try:
@@ -1031,7 +1143,7 @@ class EVMController:
                 if key_event and key_event.pressed:                    
                     self.last_key_pressed = key_event.key_number
 
-                    if key_event.key_number == VARIATION_KEY:
+                    if key_event.key_number == self.config.key_variation and self.config.shift_enable == True:
                         if self.state.shift_mode == ShiftKeyMode.ACTIVE_LOCK:
                             # print("Shift mode: Off")
                             self.state.shift_mode = ShiftKeyMode.OFF                        
@@ -1056,21 +1168,21 @@ class EVMController:
                 # Released: If Variation key released and still in pending mode, send MIDI "VARIATION"
                 # Reset shift mode when in pending or active for Variation key release
                 if key_event and key_event.released:
-                    if key_event.key_number == VARIATION_KEY:
+                    if key_event.key_number == self.config.key_variation:
                         if (self.state.shift_mode == ShiftKeyMode.PENDING) and ((time.time() - self.shift_start_time) > self.config.shift_hold_timer):
                             self.state.shift_mode = ShiftKeyMode.ACTIVE_LOCK
                             self.display.update_text(9, "Layer: Shift Lock")
-                            # print("Shift mode: Active Lock")
                             self._preset_pixels()
+                            # print("Shift mode: Active Lock")
 
                         elif (self.state.shift_mode == ShiftKeyMode.PENDING) or (self.state.shift_mode == ShiftKeyMode.ACTIVE_SHIFT):
                             # Send VAR MIDI message, but only if no other key pressed during shift mode
-                            if self.last_key_pressed == VARIATION_KEY:
+                            if self.last_key_pressed == self.config.key_variation:
                                 self._handle_key_press(key_event.key_number)                                    
                             self.state.shift_mode = ShiftKeyMode.OFF                        
                             self.display.update_text(9, "")
-                            # print("Shift mode: Off")
                             self._preset_pixels()
+                            # print("Shift mode: Off")
                                                 
                     elif key_event.key_number == TUNE_KEY: 
                         if (time.time() - self.key_start_time) > self.config.tune_hold_timer:
@@ -1083,7 +1195,7 @@ class EVMController:
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
                     direction = 1 if self.state.encoder_position < self.macropad.encoder else -1
-                    self._handle_encoder_change(direction)
+                    self._handle_encoder_change(self.config, direction)
                     self.state.encoder_position = self.macropad.encoder
 
                 # Handle encoder switch

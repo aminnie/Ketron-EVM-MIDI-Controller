@@ -96,7 +96,8 @@ COLOR_MAP = {
     'yellow': Colors.YELLOW,
     'orange': Colors.ORANGE,
     'white': Colors.WHITE,
-    'teal': Colors.TEAL
+    'teal': Colors.TEAL,
+    'offwhite': Colors.OFFWHITE
 }
 
 # Key used to trigger test tune
@@ -115,6 +116,9 @@ class EVMConfig:
         # USB port on the left side of the MacroPad
         self.usb_left = True
 
+        # MIDI Out Channel to be matched in EVM Global RX
+        self.midi_out_channel = 15
+        
         # Key used to reflect timed Eccoder mode changes on LED
         # Enable or disable Layer Shift Mode for users who prefer single layer only 
         self.key_variation = 0
@@ -160,8 +164,9 @@ class EVMConfig:
 
 # --- MIDI Handler Class ---
 class MIDIHandler:
-    def __init__(self, midi_instance, key_cache):
+    def __init__(self, midi_instance, config, key_cache):
         self.midi = midi_instance
+        self.config = config
         self.key_cache = key_cache
         
         self.manufacturer_id_pedal = bytearray([0x26, 0x79])
@@ -254,8 +259,9 @@ class MIDIHandler:
             print("Error sending macros SysEx: {}".format(e))
             return False
 
-    def send_master_volume(self, updown):
+    def send_master_volume(self, config, updown):
         """Send volume control via CC11"""
+        self.config = config
         
         try:
             # Change volume in 8-unit increments
@@ -264,17 +270,18 @@ class MIDIHandler:
             else:
                 self.cur_volume = min(127, self.cur_volume + 8)
 
-            self.midi.send(ControlChange(11, self.cur_volume), channel=15)
+            self.midi.send(ControlChange(11, self.cur_volume), channel=self.config.midi_out_channel)
             return True
         except Exception as e:
             print("Error sending volume: {}".format(e))
             return False
 
-    def send_quad_volume(self, midi_channel, volume):
+    def send_quad_volume(self, config, volume):
         """Send volume CC for Quad Encoder on special EVM CCs"""
+        self.config = config
         
         try:
-            self.midi.send(ControlChange(11, volume), midi_channel)
+            self.midi.send(ControlChange(11, volume), self.config.midi_out_channel)
         except Exception as e:
             print("Error sending volume: {}".format(e))
             return False        
@@ -538,6 +545,7 @@ class ConfigFileHandler:
 
     def safe_file_read(self, filename):
         """Safely read file with error handling"""
+
         try:
             with open(filename, "r") as f:
                 return f.readlines()
@@ -703,7 +711,15 @@ class ConfigFileHandler:
                 else:
                     self.config.tempo_timer = 6
                 print(f"Var Tempo Timer: {self.config.tempo_timer}")
-            
+
+            elif macro_parts[0] == 'MIDChan':
+                midchan = int(macro_parts[1])
+                if midchan >= 1 and midchan <= 16:
+                    self.config.midi_out_channel = midchan - 1
+                else:
+                    self.config.midi_out_channel = 15
+                print(f"Var MIDI Chan Out: {self.config.midi_out_channel}")
+                        
             return True
         except (ValueError, IndexError) as e:
             print("Error parsing variable line '{}': {}".format(line, e))
@@ -880,8 +896,6 @@ class StateManager:
     def __init__(self, config):
         self.config = config
         
-        self.midi_out_channel = 15
-        
         self.encoder_mode = EncoderMode.ROTOR
         self.encoder_position = 0
         self.encoder_sign = False
@@ -991,7 +1005,7 @@ class EVMController:
         self.config_handler = ConfigFileHandler(self.key_cache, self.config)
 
         # Initialize MIDI
-        self._init_midi(self.key_cache)
+        self._init_midi(self.config, self.key_cache)
 
         # Initialize MacroPad
         self._init_macropad()
@@ -1013,17 +1027,18 @@ class EVMController:
         
         print("Pad Controller Ready")
 
-    def _init_midi(self, key_cache):
+    def _init_midi(self, config, key_cache):
         """Initialize MIDI connections"""
+        self.config = config
         
         print("Preparing Macropad Midi")
 
         midi = adafruit_midi.MIDI(
             midi_in=usb_midi.ports[0], in_channel=0,
-            midi_out=usb_midi.ports[1], out_channel=self.state.midi_out_channel
+            midi_out=usb_midi.ports[1], out_channel=self.config.midi_out_channel
         )
 
-        self.midi_handler = MIDIHandler(midi, key_cache)
+        self.midi_handler = MIDIHandler(midi, config, key_cache)
 
     def _init_macropad(self):
         """Initialize MacroPad hardware"""
@@ -1145,8 +1160,9 @@ class EVMController:
             print(f"Error: Sending key {key_number} ".format(e))
             return False
             
-    def _handle_encoder_change(self, direction):
+    def _handle_encoder_change(self, config, direction):
         """Handle encoder rotation"""
+        self.config = config
         
         self.state.encoder_sign = not self.state.encoder_sign
         current_time = time.time()
@@ -1157,7 +1173,7 @@ class EVMController:
             self._process_tempo(direction)
             self.state.tempo_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VOLUME:
-            self._process_master_volume(direction)
+            self._process_master_volume(self.config, direction)
             self.state.volume_start_time = current_time
         elif self.state.encoder_mode == EncoderMode.VALUE:
             self._process_value(direction)
@@ -1191,8 +1207,9 @@ class EVMController:
 
         self.midi_handler.send_pedal_sysex(midi_value)
 
-    def _process_master_volume(self, direction):
+    def _process_master_volume(self, config, direction):
         """Process volume up/down commands"""
+        self.config = config
         
         sign = "+" if self.state.encoder_sign else ""
         if direction == 1:
@@ -1200,7 +1217,7 @@ class EVMController:
         else:
             self.display.update_text(3, "KNOB: Volume Down{}".format(sign))
 
-        self.midi_handler.send_master_volume(direction)
+        self.midi_handler.send_master_volume(self.config, direction)
 
     def _process_value(self, direction):
         """Process value (DIAL) up/down commands"""
@@ -1216,8 +1233,9 @@ class EVMController:
 
         self.midi_handler.send_tab_sysex(midi_value)
 
-    def _process_quad_volume(self, encoder_number, volume):
+    def _process_quad_volume(self, config, encoder_number, volume):
         """Process Quad Encoder Volumes"""
+        self.config = config
         
         if encoder_number == 0:
             if self.state.shift_mode == ShiftKeyMode.OFF:
@@ -1226,7 +1244,7 @@ class EVMController:
             else:
                 self.display.update_text(9, f"KNB1: Drum Vol {volume}")
                 ccCode = SliderCC.DRUM_CC
-            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
         elif encoder_number == 1:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"KNB2: Voice1 Vol {volume}")
@@ -1234,7 +1252,7 @@ class EVMController:
             else:
                 self.display.update_text(9, f"KNB2: Bass Vol {volume}")
                 ccCode = SliderCC.BASS_CC
-            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
         elif encoder_number == 2:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"KNB3: Voice2 Vol {volume}")
@@ -1242,7 +1260,7 @@ class EVMController:
             else:
                 self.display.update_text(9, f"KNB3: Chord Vol {volume}")
                 ccCode = SliderCC.CHORD_CC
-            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
         elif encoder_number == 3:
             if self.state.shift_mode == ShiftKeyMode.OFF:
                 self.display.update_text(9, f"KNB4: DrwBar Vol {volume}")
@@ -1250,10 +1268,11 @@ class EVMController:
             else:
                 self.display.update_text(9, f"KNB4: R/Chrd Vol {volume}")
                 ccCode = SliderCC.REALCHORD_CC
-            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+            self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
 
-    def _process_quad_switch(self, encoder_number):
+    def _process_quad_switch(self, config, encoder_number):
         """Process Quad Encoder Volumes"""
+        self.config = config
         
         list_style_voices = [SliderCC.STYLE_CC, SliderCC.DRUM_CC, SliderCC.REALCHORD_CC, SliderCC.CHORD_CC]
         list_all_voices = [SliderCC.BASS_CC, SliderCC.LOWERS_CC, SliderCC.VOICE1_CC, SliderCC.VOICE2_CC, SliderCC.DRAWBARS_CC]
@@ -1280,7 +1299,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle[0] = False
                 for index, ccCode in enumerate(list_drawbar):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
                 self.preset_a_quad_volume(False, 3, volume)
                 self.display.update_text(9, f"KNB4: Drawbar Vol {volume}")
 
@@ -1292,7 +1311,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle[1] = False
                 for index, ccCode in enumerate(list_voice2):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
                 self.preset_a_quad_volume(False, 2, volume)
                 self.display.update_text(9, f"KNB3: Voice2 Vol {volume}")
 
@@ -1304,7 +1323,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle[2] = False
                 for index, ccCode in enumerate(list_voice1):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)        
                 self.preset_a_quad_volume(False, 1, volume)
                 self.display.update_text(9, f"KNB2: Voice1 Vol {volume}")
 
@@ -1316,7 +1335,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle[3] = False
                 for index, ccCode in enumerate(list_lower):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)        
                 self.preset_a_quad_volume(False, 0, volume)
                 self.display.update_text(9, f"KNB1: Lowers Vol {volume}")
         
@@ -1330,7 +1349,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle_shift[0] = False
                 for index, ccCode in enumerate(list_realchord):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
                 self.preset_a_quad_volume(True, 3, volume)
                 self.display.update_text(9, f"KNB4: R/Chord Vol {volume}")
 
@@ -1342,7 +1361,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle_shift[1] = False
                 for index, ccCode in enumerate(list_chord):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
                 self.preset_a_quad_volume(True, 2, volume)
                 self.display.update_text(9, f"KNB3: Chord Vol {volume}")
 
@@ -1354,7 +1373,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle_shift[2] = False
                 for index, ccCode in enumerate(list_bass):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)
                 self.preset_a_quad_volume(True, 1, volume)
                 self.display.update_text(9, f"KNB2: Bass Vol {volume}")
 
@@ -1366,7 +1385,7 @@ class EVMController:
                     volume = 0x00
                     self.quad_encoders_toggle_shift[3] = False
                 for index, ccCode in enumerate(list_drum):
-                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.state.midi_out_channel)        
+                    self.midi_handler.send_quad_cc_volume(ccCode, volume, self.config.midi_out_channel)        
                 self.preset_a_quad_volume(True, 0, volume)
                 self.display.update_text(9, f"KNB1: Drums Vol {volume}")
 
@@ -1439,8 +1458,9 @@ class EVMController:
 
         return adjusted_step
 
-    def _handle_quadencoder(self):
+    def _handle_quadencoder(self, config):
         """Handle quad encoder rotary encoders and switchs press in base and shift layer modes, as well as for reverse encoders."""
+        self.config = config
 
         # Negate the position to make clockwise rotation positive
         positions = [encoder.position for encoder in self.quad_encoders]
@@ -1485,7 +1505,7 @@ class EVMController:
                         if self.state.quad_volumes_shift[n] <= 0: self.state.quad_volumes_shift[n] = 0
                                                      
                         # Send adjusted volume MIDI message
-                        self._process_quad_volume(n, self.state.quad_volumes_shift[n])
+                        self._process_quad_volume(self.config, n, self.state.quad_volumes_shift[n])
                                                             
                         # Set last position to current position after evaluating
                         self.quad_last_positions_shift[n] = rotary_pos
@@ -1533,7 +1553,7 @@ class EVMController:
                         if self.state.quad_volumes[n] <= 0: self.state.quad_volumes[n] = 0
                          
                         # Send adjusted volume MIDI message
-                        self._process_quad_volume(n, self.state.quad_volumes[n])
+                        self._process_quad_volume(self.config, n, self.state.quad_volumes[n])
                                                             
                         # Set last position to current position after evaluating
                         self.quad_last_positions[n] = rotary_pos
@@ -1638,7 +1658,7 @@ class EVMController:
                 # Handle encoder rotation
                 if self.state.encoder_position != self.macropad.encoder:
                     direction = 1 if self.state.encoder_position < self.macropad.encoder else -1
-                    self._handle_encoder_change(direction)
+                    self._handle_encoder_change(self.config, direction)
                     self.state.encoder_position = self.macropad.encoder
 
                 # Handle encoder switch
@@ -1648,7 +1668,7 @@ class EVMController:
 
                 # Handle quad encoder board
                 if self.state.is_quadencoder:
-                    self._handle_quadencoder()
+                    self._handle_quadencoder(self.config)
 
                 # Update display and handle timeouts
                 self._update_display()
