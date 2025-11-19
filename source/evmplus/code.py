@@ -1288,7 +1288,7 @@ class EVMController:
         list_voice1 = [SliderCC.VOICE1_CC]
         list_voice2 = [SliderCC.VOICE2_CC]
         list_drawbar = [SliderCC.DRAWBARS_CC]
-
+        
         if self.state.shift_mode == ShiftKeyMode.OFF:
             # Process volumes in base layer
             if encoder_number == 0 and (self.state.last_quad_switch != 0 or self.state.last_quad_switch == 10):
@@ -1515,7 +1515,7 @@ class EVMController:
 
                 # Handle switch press for this encoder
                 else:
-                    self._process_quad_switch(n)
+                    self._process_quad_switch(config, n)
                         
             elif self.state.shift_mode == ShiftKeyMode.OFF:                    
                 # If switch not pressed, update volume for encoders 
@@ -1563,7 +1563,7 @@ class EVMController:
 
                 # Handle switch press for this encoder
                 else:
-                    self._process_quad_switch(n)
+                    self._process_quad_switch(config, n)
 
 
     def _update_display(self):
